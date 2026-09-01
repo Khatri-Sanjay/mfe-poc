@@ -14,15 +14,15 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
   template: `
     <div class="admin-page-content">
       @if (loading()) {
-        <div class="skeleton-grid">
-          <span></span><span></span><span></span>
-        </div>
+        <div class="skeleton-grid"><span></span><span></span><span></span></div>
       } @else if (products().length === 0) {
         <div class="empty-state">
           <i class="bi bi-box-seam"></i>
           <h2>No products yet</h2>
           <p>Create your first product to get started.</p>
-          <a [routerLink]="adminRoute.link('/products/new')" class="btn-primary compact">Add Product</a>
+          <a [routerLink]="adminRoute.link('/products/new')" class="btn-primary compact"
+            >Add Product</a
+          >
         </div>
       } @else {
         <div class="data-table">
@@ -63,10 +63,18 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
                   }
                 </span>
                 <span class="table-actions">
-                  <a [routerLink]="adminRoute.link('/products/' + product.id)" class="icon-btn compact" title="Edit">
+                  <a
+                    [routerLink]="adminRoute.link('/products/' + product.id)"
+                    class="icon-btn compact"
+                    title="Edit"
+                  >
                     <i class="bi bi-pencil"></i>
                   </a>
-                  <button class="icon-btn danger compact" title="Delete" (click)="deleteProduct(product)">
+                  <button
+                    class="icon-btn danger compact"
+                    title="Delete"
+                    (click)="deleteProduct(product)"
+                  >
                     <i class="bi bi-trash"></i>
                   </button>
                 </span>
@@ -76,12 +84,19 @@ import { PaginationComponent } from '../../../shared/components/pagination/pagin
         </div>
       }
       @if (total() > 0) {
-        <app-pagination [page]="page()" [limit]="limit()" [total]="total()" (goTo)="onPageChange($event)" />
+        <app-pagination
+          [page]="page()"
+          [limit]="limit()"
+          [total]="total()"
+          (goTo)="onPageChange($event)"
+        />
       }
     </div>
   `,
   styles: `
-    :host { display: contents; }
+    :host {
+      display: contents;
+    }
   `,
 })
 export class ProductListComponent implements OnInit {

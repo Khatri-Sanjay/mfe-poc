@@ -61,13 +61,14 @@ type LoadedList<T> = {
       </section>
 
       @if (loading()) {
-        <div class="dashboard-skeleton">
-          <span></span><span></span><span></span><span></span>
-        </div>
+        <div class="dashboard-skeleton"><span></span><span></span><span></span><span></span></div>
       } @else {
         <section class="dashboard-metrics" aria-label="Dashboard metrics">
           @for (metric of metrics(); track metric.label) {
-            <a [routerLink]="adminRoute.link(metric.route)" class="dashboard-metric {{ metric.tone }}">
+            <a
+              [routerLink]="adminRoute.link(metric.route)"
+              class="dashboard-metric {{ metric.tone }}"
+            >
               <span class="metric-icon"><i [class]="metric.icon"></i></span>
               <span class="metric-copy">
                 <span>{{ metric.label }}</span>
@@ -128,7 +129,11 @@ type LoadedList<T> = {
                       <strong>{{ item.sku }}</strong>
                       <span>{{ item.productName }}</span>
                     </div>
-                    <span class="stock" [class.out]="item.quantityAvailable === 0" [class.in]="item.quantityAvailable > 0">
+                    <span
+                      class="stock"
+                      [class.out]="item.quantityAvailable === 0"
+                      [class.in]="item.quantityAvailable > 0"
+                    >
                       {{ item.quantityAvailable }} left
                     </span>
                   </div>
@@ -156,7 +161,9 @@ type LoadedList<T> = {
                   <div class="recent-row">
                     <div>
                       <strong>#{{ order.id.slice(0, 8) }}</strong>
-                      <span>{{ order.createdAt ? (order.createdAt | date: 'mediumDate') : 'No date' }}</span>
+                      <span>{{
+                        order.createdAt ? (order.createdAt | date: 'mediumDate') : 'No date'
+                      }}</span>
                     </div>
                     <span class="status">{{ order.status }}</span>
                     <strong>{{ order.grandTotal | money: order.currency }}</strong>
@@ -205,9 +212,7 @@ type LoadedList<T> = {
       gap: 1rem;
       border: 1px solid rgba(18, 71, 63, 0.12);
       border-radius: var(--radius-lg);
-      background:
-        linear-gradient(135deg, rgba(18, 71, 63, 0.1), rgba(200, 138, 45, 0.12)),
-        #fff;
+      background: linear-gradient(135deg, rgba(18, 71, 63, 0.1), rgba(200, 138, 45, 0.12)), #fff;
       padding: 1.25rem;
       box-shadow: var(--shadow-sm);
     }
@@ -246,7 +251,10 @@ type LoadedList<T> = {
       background: #fff;
       padding: 1rem;
       box-shadow: var(--shadow-sm);
-      transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+      transition:
+        transform 160ms ease,
+        box-shadow 160ms ease,
+        border-color 160ms ease;
     }
 
     .dashboard-metric:hover {
@@ -607,12 +615,25 @@ export class DashboardComponent implements OnInit {
 
   totalOrders = computed(() => this.ordersMetaTotal || this.orders().length);
   productsTotal = computed(() => this.productsMetaTotal || this.products().length);
-  activeProducts = computed(() => this.products().filter((product) => product.status === 'ACTIVE').length);
-  pendingReviews = computed(() => this.reviews().filter((review) => review.status === 'PENDING').length);
+  activeProducts = computed(
+    () => this.products().filter((product) => product.status === 'ACTIVE').length,
+  );
+  pendingReviews = computed(
+    () => this.reviews().filter((review) => review.status === 'PENDING').length,
+  );
   activeCoupons = computed(() => this.coupons().filter((coupon) => coupon.isActive).length);
-  reservedStock = computed(() => this.inventory().reduce((total, item) => total + (item.quantityReserved || 0), 0));
-  loadedRevenue = computed(() => this.orders().reduce((total, order) => total + this.toNumber(order.grandTotal), 0));
-  openOrders = computed(() => this.orders().filter((order) => !['DELIVERED', 'CANCELLED', 'REFUNDED'].includes(order.status)).length);
+  reservedStock = computed(() =>
+    this.inventory().reduce((total, item) => total + (item.quantityReserved || 0), 0),
+  );
+  loadedRevenue = computed(() =>
+    this.orders().reduce((total, order) => total + this.toNumber(order.grandTotal), 0),
+  );
+  openOrders = computed(
+    () =>
+      this.orders().filter(
+        (order) => !['DELIVERED', 'CANCELLED', 'REFUNDED'].includes(order.status),
+      ).length,
+  );
   primaryCurrency = computed(() => this.orders()[0]?.currency || 'AUD');
 
   lowStockItems = computed(() =>
@@ -660,7 +681,9 @@ export class DashboardComponent implements OnInit {
 
     forkJoin({
       orders: this.getList<Order>('/admin/orders?page=1&limit=100&sortOrder=desc'),
-      products: this.getList<Product>('/admin/products?page=1&limit=100&sortBy=createdAt&sortOrder=desc'),
+      products: this.getList<Product>(
+        '/admin/products?page=1&limit=100&sortBy=createdAt&sortOrder=desc',
+      ),
       users: this.getCount('/admin/users?page=1&limit=1'),
       inventory: this.getList<InventoryItem>('/admin/inventory?page=1&limit=100&sortOrder=desc'),
       reviews: this.getList<Review>('/admin/reviews?page=1&limit=100&sortOrder=desc'),

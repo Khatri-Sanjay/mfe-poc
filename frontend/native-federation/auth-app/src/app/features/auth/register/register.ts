@@ -1,7 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { AuthService } from '../../../core/services/auth';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-register',
@@ -79,9 +79,7 @@ export class Register {
         },
         error: (err) => {
           this.isSubmitting.set(false);
-          this.errorMessage.set(
-            err.error?.message || 'Registration failed. Please try again.',
-          );
+          this.errorMessage.set(err.error?.message || 'Registration failed. Please try again.');
         },
       });
   }

@@ -3,11 +3,12 @@ import { RouterLink } from '@angular/router';
 import { CatalogFacade } from '../catalog/catalog.facade';
 import { MoneyPipe } from '../../shared/pipes/money.pipe';
 import { Product } from '../../core/models/commerce.models';
+import { ProductSpotlightRemoteComponent } from '../product-spotlight/product-spotlight-remote.component';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [RouterLink, MoneyPipe],
+  imports: [RouterLink, MoneyPipe, ProductSpotlightRemoteComponent],
   template: `
     <section class="home-hero">
       <div>
@@ -23,6 +24,10 @@ import { Product } from '../../core/models/commerce.models';
         <span><strong>{{ catalog.categories().length }}</strong> categories</span>
         <span><strong>{{ catalog.brands().length }}</strong> brands</span>
       </div>
+    </section>
+
+    <section class="content-section">
+      <app-product-spotlight-remote></app-product-spotlight-remote>
     </section>
 
     <section class="content-section">

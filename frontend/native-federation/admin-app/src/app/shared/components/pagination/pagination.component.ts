@@ -18,20 +18,24 @@ export interface PaginationState {
           <i class="bi bi-chevron-left"></i>
         </button>
         @for (p of visiblePages(); track p) {
-          <button
-            class="icon-btn compact"
-            [class.active]="p === page()"
-            (click)="goTo.emit(p)"
-          >{{ p }}</button>
+          <button class="icon-btn compact" [class.active]="p === page()" (click)="goTo.emit(p)">
+            {{ p }}
+          </button>
         }
-        <button class="icon-btn compact" [disabled]="page() >= totalPages()" (click)="goTo.emit(page() + 1)">
+        <button
+          class="icon-btn compact"
+          [disabled]="page() >= totalPages()"
+          (click)="goTo.emit(page() + 1)"
+        >
           <i class="bi bi-chevron-right"></i>
         </button>
       </div>
     </div>
   `,
   styles: `
-    :host { display: block; }
+    :host {
+      display: block;
+    }
   `,
 })
 export class PaginationComponent {
@@ -41,7 +45,7 @@ export class PaginationComponent {
   goTo = output<number>();
 
   totalPages = () => Math.max(1, Math.ceil(this.total() / this.limit()));
-  startItem = () => this.total() === 0 ? 0 : (this.page() - 1) * this.limit() + 1;
+  startItem = () => (this.total() === 0 ? 0 : (this.page() - 1) * this.limit() + 1);
   endItem = () => Math.min(this.page() * this.limit(), this.total());
 
   visiblePages = () => {

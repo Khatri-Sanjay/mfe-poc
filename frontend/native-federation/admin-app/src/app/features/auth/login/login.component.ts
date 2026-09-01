@@ -18,14 +18,35 @@ import { ToastService } from '../../../shared/components/toast/toast.service';
         <form (ngSubmit)="onSubmit()">
           <label>
             Email
-            <input type="email" [(ngModel)]="email" name="email" required email placeholder="admin@example.com" />
+            <input
+              type="email"
+              [(ngModel)]="email"
+              name="email"
+              required
+              email
+              placeholder="admin@example.com"
+            />
           </label>
           <label>
             Password
             <div class="password-field">
-              <input [type]="showPassword() ? 'text' : 'password'" [(ngModel)]="password" name="password" required placeholder="Enter your password" />
-              <button type="button" class="password-toggle" (click)="showPassword.set(!showPassword())">
-                <i class="bi" [class.bi-eye]="!showPassword()" [class.bi-eye-slash]="showPassword()"></i>
+              <input
+                [type]="showPassword() ? 'text' : 'password'"
+                [(ngModel)]="password"
+                name="password"
+                required
+                placeholder="Enter your password"
+              />
+              <button
+                type="button"
+                class="password-toggle"
+                (click)="showPassword.set(!showPassword())"
+              >
+                <i
+                  class="bi"
+                  [class.bi-eye]="!showPassword()"
+                  [class.bi-eye-slash]="showPassword()"
+                ></i>
               </button>
             </div>
           </label>

@@ -1,7 +1,7 @@
-import { Routes } from "@angular/router";
-import { authGuard } from "./core/guards/auth.guard";
-import { AdminLayoutComponent } from "./layout/admin-layout.component";
-import {loadRemote} from '../federation-loader';
+import { Routes } from '@angular/router';
+import { authGuard } from './core/guards/auth.guard';
+import { AdminLayoutComponent } from './layout/admin-layout/admin-layout.component';
+import { loadRemote } from '../federation-loader';
 
 export const routes: Routes = [
   // Remote auth routes — loaded from auth-app via Native Federation

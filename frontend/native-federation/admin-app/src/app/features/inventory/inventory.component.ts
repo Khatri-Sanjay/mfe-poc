@@ -14,11 +14,17 @@ import { PaginationComponent } from '../../shared/components/pagination/paginati
       @if (loading()) {
         <div class="skeleton-grid"><span></span><span></span><span></span></div>
       } @else if (items().length === 0) {
-        <div class="empty-state"><i class="bi bi-boxes"></i><h2>No inventory items</h2></div>
+        <div class="empty-state">
+          <i class="bi bi-boxes"></i>
+          <h2>No inventory items</h2>
+        </div>
       } @else {
         <div class="data-table">
           <div class="data-table-header">
-            <div class="data-row cols-6 header"><span>SKU</span><span>Product</span><span>On Hand</span><span>Reserved</span><span>Available</span><span>Actions</span></div>
+            <div class="data-row cols-6 header">
+              <span>SKU</span><span>Product</span><span>On Hand</span><span>Reserved</span
+              ><span>Available</span><span>Actions</span>
+            </div>
           </div>
           <div class="data-table-body">
             @for (item of items(); track item.id) {
@@ -29,7 +35,9 @@ import { PaginationComponent } from '../../shared/components/pagination/paginati
                 <span>{{ item.quantityReserved }}</span>
                 <span>{{ item.quantityAvailable }}</span>
                 <span class="table-actions">
-                  <button class="icon-btn compact" (click)="adjustStock(item)"><i class="bi bi-plus-slash-minus"></i></button>
+                  <button class="icon-btn compact" (click)="adjustStock(item)">
+                    <i class="bi bi-plus-slash-minus"></i>
+                  </button>
                 </span>
               </div>
             }
@@ -37,11 +45,20 @@ import { PaginationComponent } from '../../shared/components/pagination/paginati
         </div>
       }
       @if (total() > 0) {
-        <app-pagination [page]="page()" [limit]="limit()" [total]="total()" (goTo)="onPageChange($event)" />
+        <app-pagination
+          [page]="page()"
+          [limit]="limit()"
+          [total]="total()"
+          (goTo)="onPageChange($event)"
+        />
       }
     </div>
   `,
-  styles: `:host { display: contents; }`,
+  styles: `
+    :host {
+      display: contents;
+    }
+  `,
 })
 export class InventoryComponent implements OnInit {
   private http = inject(HttpClient);
@@ -52,7 +69,9 @@ export class InventoryComponent implements OnInit {
   limit = signal(10);
   total = signal(0);
 
-  ngOnInit() { this.load(); }
+  ngOnInit() {
+    this.load();
+  }
 
   onPageChange(newPage: number) {
     this.page.set(newPage);
@@ -73,7 +92,9 @@ export class InventoryComponent implements OnInit {
         this.total.set(res.meta?.total ?? 0);
         this.loading.set(false);
       },
-      error: () => { this.loading.set(false); },
+      error: () => {
+        this.loading.set(false);
+      },
     });
   }
 
@@ -83,9 +104,17 @@ export class InventoryComponent implements OnInit {
     const qty = parseInt(delta, 10);
     if (isNaN(qty)) return;
     const note = prompt('Note (optional):') || undefined;
-    this.http.post(`${environment.apiUrl}/admin/inventory/${item.variantId}/adjustments`, { quantityDelta: qty, note }).subscribe({
-      next: () => { this.toast.success('Adjusted', 'Stock adjusted.'); this.load(); },
-      error: (err) => this.toast.error('Error', err.error?.message || 'Failed.'),
-    });
+    this.http
+      .post(`${environment.apiUrl}/admin/inventory/${item.variantId}/adjustments`, {
+        quantityDelta: qty,
+        note,
+      })
+      .subscribe({
+        next: () => {
+          this.toast.success('Adjusted', 'Stock adjusted.');
+          this.load();
+        },
+        error: (err) => this.toast.error('Error', err.error?.message || 'Failed.'),
+      });
   }
 }

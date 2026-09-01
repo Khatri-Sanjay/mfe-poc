@@ -25,9 +25,9 @@ import { ToastService } from '../../shared/components/toast/toast.service';
               Parent
               <select [(ngModel)]="editForm.parentId">
                 <option value="">None (Top Level)</option>
-              @for (cat of categories(); track cat.id) {
-                    <option [value]="cat.id">{{ cat.name }}</option>
-                  }
+                @for (cat of categories(); track cat.id) {
+                  <option [value]="cat.id">{{ cat.name }}</option>
+                }
               </select>
             </label>
             <label>
@@ -36,10 +36,15 @@ import { ToastService } from '../../shared/components/toast/toast.service';
             </label>
             <label class="span-2">
               Description
-              <textarea [(ngModel)]="editForm.description" placeholder="Optional description"></textarea>
+              <textarea
+                [(ngModel)]="editForm.description"
+                placeholder="Optional description"
+              ></textarea>
             </label>
             <div class="inline-actions">
-              <button class="btn-primary compact" (click)="save()">{{ editingId() ? 'Update' : 'Create' }}</button>
+              <button class="btn-primary compact" (click)="save()">
+                {{ editingId() ? 'Update' : 'Create' }}
+              </button>
               <button class="btn-secondary compact" (click)="cancelEdit()">Cancel</button>
             </div>
           </div>
@@ -78,8 +83,12 @@ import { ToastService } from '../../shared/components/toast/toast.service';
                   </span>
                 </span>
                 <span class="table-actions">
-                  <button class="icon-btn compact" (click)="edit(cat)"><i class="bi bi-pencil"></i></button>
-                  <button class="icon-btn danger compact" (click)="delete(cat)"><i class="bi bi-trash"></i></button>
+                  <button class="icon-btn compact" (click)="edit(cat)">
+                    <i class="bi bi-pencil"></i>
+                  </button>
+                  <button class="icon-btn danger compact" (click)="delete(cat)">
+                    <i class="bi bi-trash"></i>
+                  </button>
                 </span>
               </div>
             }
@@ -88,7 +97,11 @@ import { ToastService } from '../../shared/components/toast/toast.service';
       }
     </div>
   `,
-  styles: `:host { display: contents; }`,
+  styles: `
+    :host {
+      display: contents;
+    }
+  `,
 })
 export class CategoriesComponent implements OnInit {
   private http = inject(HttpClient);
@@ -108,14 +121,26 @@ export class CategoriesComponent implements OnInit {
   load() {
     this.loading.set(true);
     this.http.get<any>(`${environment.apiUrl}/categories`).subscribe({
-      next: (res) => { this.categories.set(res.data ?? []); this.loading.set(false); },
-      error: () => { this.toast.error('Error', 'Failed to load categories.'); this.loading.set(false); },
+      next: (res) => {
+        this.categories.set(res.data ?? []);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.toast.error('Error', 'Failed to load categories.');
+        this.loading.set(false);
+      },
     });
   }
 
   edit(cat: Category) {
     this.editingId.set(cat.id);
-    this.editForm = { name: cat.name, slug: cat.slug, description: cat.description || '', parentId: cat.parentId || '', sortOrder: cat.sortOrder };
+    this.editForm = {
+      name: cat.name,
+      slug: cat.slug,
+      description: cat.description || '',
+      parentId: cat.parentId || '',
+      sortOrder: cat.sortOrder,
+    };
     this.showForm.set(true);
   }
 
@@ -135,9 +160,15 @@ export class CategoriesComponent implements OnInit {
       sortOrder: this.editForm.sortOrder,
     };
     const id = this.editingId();
-    const req = id ? this.http.patch(`${environment.apiUrl}/admin/categories/${id}`, body) : this.http.post(`${environment.apiUrl}/admin/categories`, body);
+    const req = id
+      ? this.http.patch(`${environment.apiUrl}/admin/categories/${id}`, body)
+      : this.http.post(`${environment.apiUrl}/admin/categories`, body);
     req.subscribe({
-      next: () => { this.toast.success('Saved', 'Category saved.'); this.cancelEdit(); this.load(); },
+      next: () => {
+        this.toast.success('Saved', 'Category saved.');
+        this.cancelEdit();
+        this.load();
+      },
       error: (err) => this.toast.error('Error', err.error?.message || 'Failed.'),
     });
   }
@@ -145,7 +176,10 @@ export class CategoriesComponent implements OnInit {
   delete(cat: Category) {
     if (!confirm(`Delete "${cat.name}"?`)) return;
     this.http.delete(`${environment.apiUrl}/admin/categories/${cat.id}`).subscribe({
-      next: () => { this.toast.success('Deleted', 'Category deleted.'); this.load(); },
+      next: () => {
+        this.toast.success('Deleted', 'Category deleted.');
+        this.load();
+      },
       error: (err) => this.toast.error('Error', err.error?.message || 'Failed.'),
     });
   }

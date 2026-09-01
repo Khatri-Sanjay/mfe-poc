@@ -1,7 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { AuthService } from '../../../core/services/auth';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-resend-verification',
@@ -36,9 +36,7 @@ export class ResendVerification {
       },
       error: (err) => {
         this.isSubmitting.set(false);
-        this.errorMessage.set(
-          err.error?.message || 'Something went wrong. Please try again.',
-        );
+        this.errorMessage.set(err.error?.message || 'Something went wrong. Please try again.');
       },
     });
   }

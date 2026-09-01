@@ -2,14 +2,13 @@
 @import 'tailwindcss';
 
 :root {
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
-  --color-primary-light: #60a5fa;
+  /*--color-primary: #2563eb;*/
+  /*--color-primary-hover: #1d4ed8;*/
+  /*--color-primary-light: #60a5fa;*/
 
-
-  /*--color-primary: #12473f;*/
-  /*--color-primary-hover: #0b332e;*/
-  /*--color-primary-light: #24786d;*/
+  --color-primary: #12473f;
+  --color-primary-hover: #0b332e;
+  --color-primary-light: #24786d;
   --color-secondary: #c88a2d;
   --color-secondary-light: #f2c66d;
   --color-success: #0f7a4f;
@@ -115,7 +114,11 @@ body {
   margin: 0;
   min-width: 320px;
   background:
-    radial-gradient(circle at top left, color-mix(in srgb, var(--color-secondary) 10%, transparent), transparent 28rem),
+    radial-gradient(
+      circle at top left,
+      color-mix(in srgb, var(--color-secondary) 10%, transparent),
+      transparent 28rem
+    ),
     linear-gradient(180deg, var(--color-page-start) 0%, var(--color-background) 18rem);
   color: var(--color-text-primary);
   font-family:
@@ -124,7 +127,7 @@ body {
     system-ui,
     -apple-system,
     BlinkMacSystemFont,
-    "Segoe UI",
+    'Segoe UI',
     sans-serif;
 }
 
@@ -225,7 +228,11 @@ textarea {
   min-width: 0;
   min-height: 0;
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--color-surface-muted) 80%, transparent), color-mix(in srgb, var(--color-background) 0%, transparent)),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-surface-muted) 80%, transparent),
+      color-mix(in srgb, var(--color-background) 0%, transparent)
+    ),
     var(--color-background);
 }
 
@@ -1113,8 +1120,7 @@ textarea {
 }
 
 .surface,
-.filter-panel,
-.auth-card {
+.filter-panel {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
@@ -1183,8 +1189,12 @@ h2 {
   border: 1px solid var(--color-primary-border-muted);
   border-radius: 1rem;
   background:
-    linear-gradient(135deg, color-mix(in srgb, var(--color-text-primary) 90%, transparent), color-mix(in srgb, var(--color-primary) 78%, transparent)),
-    url("https://images.unsplash.com/photo-1557821552-17105176677c?auto=format&fit=crop&w=1800&q=80");
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-text-primary) 90%, transparent),
+      color-mix(in srgb, var(--color-primary) 78%, transparent)
+    ),
+    url('https://images.unsplash.com/photo-1557821552-17105176677c?auto=format&fit=crop&w=1800&q=80');
   background-position: center;
   background-size: cover;
   color: var(--color-text-inverse);
@@ -1326,7 +1336,6 @@ h2 {
 }
 
 .filter-panel form,
-.auth-card form,
 .checkout-form,
 .stack-form,
 .review-form,
@@ -1543,7 +1552,12 @@ h2 {
 .skeleton-grid span {
   min-height: 20rem;
   border-radius: var(--radius-lg);
-  background: linear-gradient(90deg, var(--color-skeleton-start), var(--color-skeleton-mid), var(--color-skeleton-start));
+  background: linear-gradient(
+    90deg,
+    var(--color-skeleton-start),
+    var(--color-skeleton-mid),
+    var(--color-skeleton-start)
+  );
   background-size: 200% 100%;
   animation: skeleton 1.3s infinite;
 }
@@ -2185,7 +2199,12 @@ h2 {
   display: block;
   min-height: 24rem;
   border-radius: var(--radius-lg);
-  background: linear-gradient(90deg, var(--color-skeleton-start), var(--color-skeleton-mid), var(--color-skeleton-start));
+  background: linear-gradient(
+    90deg,
+    var(--color-skeleton-start),
+    var(--color-skeleton-mid),
+    var(--color-skeleton-start)
+  );
   background-size: 200% 100%;
   animation: skeleton 1.3s infinite;
 }
@@ -2199,7 +2218,12 @@ h2 {
   width: 4.5rem;
   height: 4.5rem;
   border-radius: var(--radius-md);
-  background: linear-gradient(90deg, var(--color-skeleton-start), var(--color-skeleton-mid), var(--color-skeleton-start));
+  background: linear-gradient(
+    90deg,
+    var(--color-skeleton-start),
+    var(--color-skeleton-mid),
+    var(--color-skeleton-start)
+  );
   background-size: 200% 100%;
   animation: skeleton 1.3s infinite;
 }
@@ -2216,17 +2240,35 @@ h2 {
   display: block;
   height: 1rem;
   border-radius: var(--radius-sm);
-  background: linear-gradient(90deg, var(--color-skeleton-start), var(--color-skeleton-mid), var(--color-skeleton-start));
+  background: linear-gradient(
+    90deg,
+    var(--color-skeleton-start),
+    var(--color-skeleton-mid),
+    var(--color-skeleton-start)
+  );
   background-size: 200% 100%;
   animation: skeleton 1.3s infinite;
 }
 
-.skeleton-line.w30 { width: 30%; }
-.skeleton-line.w40 { width: 40%; }
-.skeleton-line.w60 { width: 60%; }
-.skeleton-line.w70 { width: 70%; }
-.skeleton-line.w80 { width: 80%; }
-.skeleton-line.w100 { width: 100%; height: 2.5rem; }
+.skeleton-line.w30 {
+  width: 30%;
+}
+.skeleton-line.w40 {
+  width: 40%;
+}
+.skeleton-line.w60 {
+  width: 60%;
+}
+.skeleton-line.w70 {
+  width: 70%;
+}
+.skeleton-line.w80 {
+  width: 80%;
+}
+.skeleton-line.w100 {
+  width: 100%;
+  height: 2.5rem;
+}
 
 @media (max-width: 900px) {
   .detail-layout {
@@ -2555,7 +2597,11 @@ h2 {
   gap: 1rem;
   border-right: 1px solid color-mix(in srgb, var(--color-text-inverse) 8%, transparent);
   background:
-    radial-gradient(circle at 18% 0%, color-mix(in srgb, var(--color-primary-light) 42%, transparent), transparent 15rem),
+    radial-gradient(
+      circle at 18% 0%,
+      color-mix(in srgb, var(--color-primary-light) 42%, transparent),
+      transparent 15rem
+    ),
     linear-gradient(180deg, var(--sidebar-bg) 0%, var(--sidebar-bg-dark) 100%);
   color: var(--sidebar-text);
   padding: 0.95rem 0.8rem;
@@ -2585,12 +2631,11 @@ h2 {
   width: 2.5rem;
   height: 2.5rem;
   border: 1px solid color-mix(in srgb, var(--color-text-inverse) 16%, transparent);
-  background:
-    linear-gradient(
-      145deg,
-      color-mix(in srgb, var(--color-primary-light) 62%, var(--color-text-inverse)),
-      var(--color-primary-light)
-    );
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--color-primary-light) 62%, var(--color-text-inverse)),
+    var(--color-primary-light)
+  );
   color: var(--color-text-inverse);
   box-shadow: 0 8px 20px var(--color-dark-shadow);
 }

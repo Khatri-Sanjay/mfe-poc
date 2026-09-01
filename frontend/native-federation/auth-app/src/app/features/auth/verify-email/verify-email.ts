@@ -1,6 +1,6 @@
 import { Component, signal, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { AuthService } from '../../../core/services/auth';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-verify-email',
@@ -23,7 +23,9 @@ export class VerifyEmail implements OnInit {
     if (token) {
       this.verifyToken(token);
     } else {
-      this.errorMessage.set('No verification token found. Please check your email for the verification link.');
+      this.errorMessage.set(
+        'No verification token found. Please check your email for the verification link.',
+      );
     }
   }
 
@@ -38,7 +40,8 @@ export class VerifyEmail implements OnInit {
       error: (err) => {
         this.isVerifying.set(false);
         this.errorMessage.set(
-          err.error?.message || 'Verification failed. The link may have expired or already been used.',
+          err.error?.message ||
+            'Verification failed. The link may have expired or already been used.',
         );
       },
     });

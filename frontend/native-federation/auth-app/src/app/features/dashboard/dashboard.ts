@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { AuthService } from '../../core/services/auth';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -25,7 +25,9 @@ import { AuthService } from '../../core/services/auth';
         <section class="welcome-card">
           <p class="eyebrow">Dashboard</p>
           <h1>Welcome, {{ user()?.firstName }}!</h1>
-          <p class="muted">You are signed in as <strong>{{ user()?.email }}</strong></p>
+          <p class="muted">
+            You are signed in as <strong>{{ user()?.email }}</strong>
+          </p>
 
           <div class="user-details">
             <div class="detail-item">
@@ -38,7 +40,11 @@ import { AuthService } from '../../core/services/auth';
             <div class="detail-item">
               <span class="detail-label">Email Verified</span>
               <span class="detail-value" [class.verified]="user()?.emailVerified">
-                <i [class]="user()?.emailVerified ? 'bi bi-check-circle-fill' : 'bi bi-x-circle-fill'"></i>
+                <i
+                  [class]="
+                    user()?.emailVerified ? 'bi bi-check-circle-fill' : 'bi bi-x-circle-fill'
+                  "
+                ></i>
                 {{ user()?.emailVerified ? 'Yes' : 'No' }}
               </span>
             </div>

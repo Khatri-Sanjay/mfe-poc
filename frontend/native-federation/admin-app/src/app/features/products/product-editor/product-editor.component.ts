@@ -31,11 +31,18 @@ import { ToastService } from '../../../shared/components/toast/toast.service';
             </label>
             <label class="span-2">
               Short Description
-              <textarea [(ngModel)]="form.shortDescription" placeholder="Brief description"></textarea>
+              <textarea
+                [(ngModel)]="form.shortDescription"
+                placeholder="Brief description"
+              ></textarea>
             </label>
             <label class="span-2">
               Description
-              <textarea [(ngModel)]="form.description" placeholder="Full description" style="min-height:10rem"></textarea>
+              <textarea
+                [(ngModel)]="form.description"
+                placeholder="Full description"
+                style="min-height:10rem"
+              ></textarea>
             </label>
           </div>
         </div>
@@ -69,8 +76,15 @@ import { ToastService } from '../../../shared/components/toast/toast.service';
               <label>Categories</label>
               <div class="category-picker">
                 @for (cat of categories(); track cat.id) {
-                  <label class="category-option" [class.selected]="form.categoryIds.includes(cat.id)">
-                    <input type="checkbox" [checked]="form.categoryIds.includes(cat.id)" (change)="toggleCategory(cat.id)" />
+                  <label
+                    class="category-option"
+                    [class.selected]="form.categoryIds.includes(cat.id)"
+                  >
+                    <input
+                      type="checkbox"
+                      [checked]="form.categoryIds.includes(cat.id)"
+                      (change)="toggleCategory(cat.id)"
+                    />
                     {{ cat.name }}
                   </label>
                 }
@@ -107,11 +121,22 @@ import { ToastService } from '../../../shared/components/toast/toast.service';
                 </label>
                 <label>
                   Price
-                  <input type="text" [(ngModel)]="variant.price" required placeholder="99.99" inputmode="decimal" />
+                  <input
+                    type="text"
+                    [(ngModel)]="variant.price"
+                    required
+                    placeholder="99.99"
+                    inputmode="decimal"
+                  />
                 </label>
                 <label>
                   Compare At Price
-                  <input type="text" [(ngModel)]="variant.compareAtPrice" placeholder="129.99" inputmode="decimal" />
+                  <input
+                    type="text"
+                    [(ngModel)]="variant.compareAtPrice"
+                    placeholder="129.99"
+                    inputmode="decimal"
+                  />
                 </label>
                 <label>
                   Quantity
@@ -119,7 +144,12 @@ import { ToastService } from '../../../shared/components/toast/toast.service';
                 </label>
                 <label>
                   Currency
-                  <input type="text" [(ngModel)]="variant.currency" placeholder="AUD" maxlength="3" />
+                  <input
+                    type="text"
+                    [(ngModel)]="variant.currency"
+                    placeholder="AUD"
+                    maxlength="3"
+                  />
                 </label>
               </div>
             </div>
@@ -131,14 +161,16 @@ import { ToastService } from '../../../shared/components/toast/toast.service';
       </div>
       <div class="inline-actions" style="margin-top:1rem">
         <button class="btn-primary compact" (click)="save()" [disabled]="saving()">
-          {{ saving() ? 'Saving...' : (isEdit() ? 'Update Product' : 'Create Product') }}
+          {{ saving() ? 'Saving...' : isEdit() ? 'Update Product' : 'Create Product' }}
         </button>
         <button class="btn-secondary compact" (click)="cancel()">Cancel</button>
       </div>
     </div>
   `,
   styles: `
-    :host { display: contents; }
+    :host {
+      display: contents;
+    }
   `,
 })
 export class ProductEditorComponent implements OnInit {
@@ -162,7 +194,14 @@ export class ProductEditorComponent implements OnInit {
     brandId: '',
     categoryIds: [] as string[],
     variants: [
-      { sku: '', name: 'Default', price: '', compareAtPrice: '', currency: 'AUD', quantityOnHand: 0 },
+      {
+        sku: '',
+        name: 'Default',
+        price: '',
+        compareAtPrice: '',
+        currency: 'AUD',
+        quantityOnHand: 0,
+      },
     ] as any[],
   };
 
@@ -191,15 +230,16 @@ export class ProductEditorComponent implements OnInit {
         this.form.status = p.status;
         this.form.brandId = p.brand?.id || '';
         this.form.categoryIds = p.categories?.map((c: any) => c.id) || [];
-        this.form.variants = p.variants?.map((v: any) => ({
-          id: v.id,
-          sku: v.sku,
-          name: v.name,
-          price: v.price,
-          compareAtPrice: v.compareAtPrice || '',
-          currency: v.currency || 'AUD',
-          quantityOnHand: v.quantityOnHand ?? v.quantityAvailable ?? 0,
-        })) || [];
+        this.form.variants =
+          p.variants?.map((v: any) => ({
+            id: v.id,
+            sku: v.sku,
+            name: v.name,
+            price: v.price,
+            compareAtPrice: v.compareAtPrice || '',
+            currency: v.currency || 'AUD',
+            quantityOnHand: v.quantityOnHand ?? v.quantityAvailable ?? 0,
+          })) || [];
         this.existingVariantIds = this.form.variants.map((v: any) => v.id).filter(Boolean);
       },
     });
@@ -224,7 +264,14 @@ export class ProductEditorComponent implements OnInit {
   }
 
   addVariant() {
-    this.form.variants.push({ sku: '', name: '', price: '', compareAtPrice: '', currency: 'AUD', quantityOnHand: 0 });
+    this.form.variants.push({
+      sku: '',
+      name: '',
+      price: '',
+      compareAtPrice: '',
+      currency: 'AUD',
+      quantityOnHand: 0,
+    });
   }
 
   removeVariant(i: number) {
@@ -305,18 +352,34 @@ export class ProductEditorComponent implements OnInit {
     };
 
     for (const v of newVariants) {
-      this.http.post(`${environment.apiUrl}/admin/products/${productId}/variants`, {
-        sku: v.sku,
-        name: v.name,
-        price: String(v.price),
-        compareAtPrice: v.compareAtPrice ? String(v.compareAtPrice) : undefined,
-        currency: v.currency || 'AUD',
-        quantityOnHand: v.quantityOnHand ?? 0,
-      }).subscribe({ next: done, error: () => { this.saving.set(false); this.toast.error('Error', 'Failed to add variant.'); } });
+      this.http
+        .post(`${environment.apiUrl}/admin/products/${productId}/variants`, {
+          sku: v.sku,
+          name: v.name,
+          price: String(v.price),
+          compareAtPrice: v.compareAtPrice ? String(v.compareAtPrice) : undefined,
+          currency: v.currency || 'AUD',
+          quantityOnHand: v.quantityOnHand ?? 0,
+        })
+        .subscribe({
+          next: done,
+          error: () => {
+            this.saving.set(false);
+            this.toast.error('Error', 'Failed to add variant.');
+          },
+        });
     }
 
     for (const vid of toDelete) {
-      this.http.delete(`${environment.apiUrl}/admin/products/${productId}/variants/${vid}`).subscribe({ next: done, error: () => { this.saving.set(false); this.toast.error('Error', 'Failed to delete variant.'); } });
+      this.http
+        .delete(`${environment.apiUrl}/admin/products/${productId}/variants/${vid}`)
+        .subscribe({
+          next: done,
+          error: () => {
+            this.saving.set(false);
+            this.toast.error('Error', 'Failed to delete variant.');
+          },
+        });
     }
   }
 }

@@ -12,7 +12,13 @@ import { filter } from 'rxjs';
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [RouterOutlet, HeaderComponent, FooterComponent, MobileNavigationComponent, ToastComponent],
+  imports: [
+    RouterOutlet,
+    HeaderComponent,
+    FooterComponent,
+    MobileNavigationComponent,
+    ToastComponent,
+  ],
   template: `
     @if (!isAdminRoute()) {
       <app-header />
@@ -34,7 +40,10 @@ export class ShellComponent implements OnInit {
   private readonly router = inject(Router);
 
   private readonly currentUrl = signal(this.router.url);
-  readonly isAdminRoute = computed(() => this.currentUrl().startsWith('/admin'));
+  readonly isAdminRoute = computed(() => {
+    const url = this.currentUrl();
+    return url.startsWith('/admin') || url.startsWith('/auth');
+  });
 
   constructor() {
     this.router.events

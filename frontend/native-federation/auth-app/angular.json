@@ -17,7 +17,7 @@
           "builder": "@angular-architects/native-federation:build",
           "options": {
             "cacheExternalArtifacts": true,
-            "tsConfig": "tsconfig.federation.json"
+            "tsConfig": "tsconfig.app.json"
           },
           "configurations": {
             "production": {
@@ -34,7 +34,7 @@
           "builder": "@angular-architects/native-federation:build",
           "options": {
             "target": "auth-app:serve-original:development",
-            "tsConfig": "tsconfig.federation.json",
+            "tsConfig": "tsconfig.app.json",
             "rebuildDelay": 500,
             "cacheExternalArtifacts": true,
             "dev": true,

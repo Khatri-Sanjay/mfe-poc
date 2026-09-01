@@ -1,6 +1,6 @@
 import { CanActivateFn, Router } from '@angular/router';
 import { inject } from '@angular/core';
-import { AuthService } from '../services/auth';
+import { AuthService } from '../services/auth.service';
 
 export const authGuard: CanActivateFn = () => {
   const authService = inject(AuthService);
@@ -10,7 +10,7 @@ export const authGuard: CanActivateFn = () => {
     return true;
   }
 
-  return router.parseUrl('/login');
+  return router.parseUrl(authPath('/login'));
 };
 
 export const guestGuard: CanActivateFn = () => {
@@ -21,5 +21,9 @@ export const guestGuard: CanActivateFn = () => {
     return true;
   }
 
-  return router.parseUrl('/dashboard');
+  return router.parseUrl(authPath('/dashboard'));
 };
+
+function authPath(path: string): string {
+  return window.location.pathname.startsWith('/auth') ? `/auth${path}` : path;
+}

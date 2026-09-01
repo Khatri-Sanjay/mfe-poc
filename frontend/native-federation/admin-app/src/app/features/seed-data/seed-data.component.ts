@@ -9,7 +9,10 @@ import { SeedDataService, SeedStatus } from './seed-data.service';
         <i class="bi bi-info-circle"></i>
         <div>
           <strong>Before seeding</strong>
-          <p>Make sure you are logged in with an admin account that has the required permissions. Existing data with the same slugs/codes will not be duplicated.</p>
+          <p>
+            Make sure you are logged in with an admin account that has the required permissions.
+            Existing data with the same slugs/codes will not be duplicated.
+          </p>
         </div>
       </div>
 
@@ -54,7 +57,9 @@ import { SeedDataService, SeedStatus } from './seed-data.service';
     </div>
   `,
   styles: `
-    :host { display: contents; }
+    :host {
+      display: contents;
+    }
 
     .seed-warning {
       display: grid;
@@ -100,7 +105,9 @@ import { SeedDataService, SeedStatus } from './seed-data.service';
       background: #fff;
       padding: 1.25rem;
       box-shadow: var(--shadow-sm);
-      transition: transform 160ms ease, box-shadow 160ms ease;
+      transition:
+        transform 160ms ease,
+        box-shadow 160ms ease;
     }
 
     .seed-card:hover {
@@ -150,8 +157,12 @@ import { SeedDataService, SeedStatus } from './seed-data.service';
     }
 
     @keyframes spin {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
+      from {
+        transform: rotate(0deg);
+      }
+      to {
+        transform: rotate(360deg);
+      }
     }
 
     @media (max-width: 560px) {
@@ -169,11 +180,19 @@ import { SeedDataService, SeedStatus } from './seed-data.service';
 export class SeedDataComponent {
   seedService = inject(SeedDataService);
 
-  seedItems: { key: keyof SeedStatus; title: string; description: string; icon: string; color: string; count: string }[] = [
+  seedItems: {
+    key: keyof SeedStatus;
+    title: string;
+    description: string;
+    icon: string;
+    color: string;
+    count: string;
+  }[] = [
     {
       key: 'categories',
       title: 'Categories',
-      description: 'Electronics, Phones, Laptops, Tablets, Accessories, Audio, Wearables, Cameras, Gaming, Home & Kitchen',
+      description:
+        'Electronics, Phones, Laptops, Tablets, Accessories, Audio, Wearables, Cameras, Gaming, Home & Kitchen',
       icon: 'bi-tags',
       color: 'linear-gradient(135deg, #12473f, #24786d)',
       count: '10 categories',
@@ -189,7 +208,8 @@ export class SeedDataComponent {
     {
       key: 'products',
       title: 'Products',
-      description: '17 products with real images, variants, pricing, and stock levels across all categories',
+      description:
+        '17 products with real images, variants, pricing, and stock levels across all categories',
       icon: 'bi-box-seam',
       color: 'linear-gradient(135deg, #0f7a4f, #15a06a)',
       count: '17 products',

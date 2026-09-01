@@ -7,11 +7,13 @@ import { ToastService } from './toast.service';
     <div class="toast-stack">
       @for (toast of toastService.toasts(); track toast.id) {
         <div class="toast-message" [class]="toast.type">
-          <i class="bi"
+          <i
+            class="bi"
             [class.bi-check-circle-fill]="toast.type === 'success'"
             [class.bi-exclamation-circle-fill]="toast.type === 'error'"
             [class.bi-exclamation-triangle-fill]="toast.type === 'warning'"
-            [class.bi-info-circle-fill]="toast.type === 'info'"></i>
+            [class.bi-info-circle-fill]="toast.type === 'info'"
+          ></i>
           <div class="toast-copy">
             <strong>{{ toast.title }}</strong>
             <span>{{ toast.message }}</span>
