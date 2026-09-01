@@ -1,0 +1,32 @@
+<section class="auth-card">
+  <p class="eyebrow">Email verification</p>
+
+  @if (isVerifying()) {
+  <h1>Verifying your email</h1>
+  <div class="status-message">
+    <span class="spinner-large"></span>
+    <p>Please wait while we verify your email address...</p>
+  </div>
+  } @else if (successMessage()) {
+  <h1>Email verified!</h1>
+  <div class="status-message">
+    <div class="status-icon success">
+      <i class="bi bi-check-lg"></i>
+    </div>
+    <p>{{ successMessage() }}</p>
+  </div>
+  } @else if (errorMessage()) {
+  <h1>Verification failed</h1>
+  <div class="status-message">
+    <div class="status-icon error">
+      <i class="bi bi-x-lg"></i>
+    </div>
+    <p>{{ errorMessage() }}</p>
+  </div>
+  }
+
+  <a class="btn-primary" routerLink="/login">
+    <i class="bi bi-box-arrow-in-right"></i>
+    Go to sign in
+  </a>
+</section>

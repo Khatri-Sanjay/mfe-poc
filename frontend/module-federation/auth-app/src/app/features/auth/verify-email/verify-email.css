@@ -1,0 +1,92 @@
+.auth-card {
+  max-width: 34rem;
+  width: 100%;
+  margin: 0 auto;
+  padding: 1.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+  text-align: center;
+}
+
+.auth-card h1 {
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  line-height: 1.05;
+  font-weight: 950;
+  margin-bottom: 1.25rem;
+}
+
+.status-message {
+  margin-bottom: 1.5rem;
+}
+
+.status-message p {
+  color: var(--color-text-muted);
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+.status-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1rem;
+}
+
+.status-icon i {
+  font-size: 1.5rem;
+}
+
+.status-icon.success {
+  background: #f2fbf6;
+  color: var(--color-success);
+}
+
+.status-icon.error {
+  background: #fff7f6;
+  color: var(--color-danger);
+}
+
+.spinner-large {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  display: block;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--color-primary), #17685c);
+  color: #fff;
+  min-height: 2.45rem;
+  padding: 0.55rem 0.9rem;
+  font-weight: 850;
+  line-height: 1.1;
+  cursor: pointer;
+  transition: background 0.15s;
+  text-decoration: none;
+}
+
+.btn-primary:hover {
+  background: var(--color-primary-hover);
+  color: #fff;
+}
