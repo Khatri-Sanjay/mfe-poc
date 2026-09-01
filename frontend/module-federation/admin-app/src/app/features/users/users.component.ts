@@ -92,7 +92,6 @@ export class UsersComponent implements OnInit {
     const params: any = {
       page: this.page(),
       limit: this.limit(),
-      sortBy: 'createdAt',
       sortOrder: 'desc',
     };
     this.http.get<any>(`${environment.apiUrl}/admin/users`, { params }).subscribe({

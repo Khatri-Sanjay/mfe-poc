@@ -47,6 +47,7 @@ Angular MFEs
 - RBAC plus permission-based guards and admin APIs
 - Categories, brands, products, variants, product images, and inventory history
 - Public catalog search/filter/sort/pagination
+- Product price comparison API with source adapter abstraction and mock market sources
 - Addresses, cart, wishlist, shipping methods, and coupons
 - Checkout quote and checkout transaction with inventory row locks and idempotency key support
 - Immutable orders, order items, address snapshots, and status history
@@ -168,6 +169,7 @@ Catalog:
 - `GET /api/v1/products`
 - `GET /api/v1/products/:id`
 - `GET /api/v1/products/slug/:slug`
+- `GET /api/v1/product-comparison/:productId`
 - `GET /api/v1/products/:id/reviews`
 - `POST /api/v1/products/:id/reviews`
 - `PATCH /api/v1/reviews/:id`

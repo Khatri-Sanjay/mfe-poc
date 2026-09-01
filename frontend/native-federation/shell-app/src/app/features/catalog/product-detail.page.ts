@@ -154,6 +154,10 @@ import { CatalogService } from './catalog.service';
               >
                 <i [class]="wishlist.has(item.id) ? 'bi bi-heart-fill' : 'bi bi-heart'"></i>
               </button>
+              <a class="btn-secondary detail-price-lens-btn" [routerLink]="['/price-lens', item.id]">
+                <i class="bi bi-bar-chart-line"></i>
+                Price Lens
+              </a>
             </div>
           </div>
 

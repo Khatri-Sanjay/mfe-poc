@@ -84,7 +84,6 @@ export class OrdersComponent implements OnInit {
     const params: any = {
       page: this.page(),
       limit: this.limit(),
-      sortBy: 'createdAt',
       sortOrder: 'desc',
     };
     if (this.statusFilter) params.status = this.statusFilter;

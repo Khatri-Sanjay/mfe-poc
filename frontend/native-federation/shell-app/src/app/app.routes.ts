@@ -76,6 +76,20 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/orders/order-detail.page').then((m) => m.OrderDetailPage),
       },
+      {
+        path: 'price-lens',
+        loadComponent: () =>
+          import('./features/price-lens/price-lens-remote.component').then(
+            (m) => m.PriceLensRemoteComponent,
+          ),
+      },
+      {
+        path: 'price-lens/:productId',
+        loadComponent: () =>
+          import('./features/price-lens/price-lens-remote.component').then(
+            (m) => m.PriceLensRemoteComponent,
+          ),
+      },
 
       {
         path: 'auth',

@@ -23,6 +23,7 @@ import { WishlistFacade } from '../../features/wishlist/wishlist.facade';
 
       <nav class="desktop-nav" aria-label="Primary navigation">
         <a routerLink="/products" routerLinkActive="active">Shop</a>
+        <a routerLink="/price-lens" routerLinkActive="active">Price Lens</a>
         <a routerLink="/wishlist" routerLinkActive="active">Wishlist</a>
         @if (auth.isAuthenticated()) {
           <a routerLink="/orders" routerLinkActive="active">Orders</a>
@@ -177,6 +178,9 @@ import { WishlistFacade } from '../../features/wishlist/wishlist.facade';
         <nav class="mobile-drawer-nav" aria-label="Mobile navigation">
           <a routerLink="/products" (click)="mobileOpen.set(false)"
             ><i class="bi bi-grid-3x3-gap"></i> Shop</a
+          >
+          <a routerLink="/price-lens" (click)="mobileOpen.set(false)"
+            ><i class="bi bi-bar-chart-line"></i> Price Lens</a
           >
           <a routerLink="/wishlist" (click)="mobileOpen.set(false)"
             ><i class="bi bi-heart"></i> Wishlist</a

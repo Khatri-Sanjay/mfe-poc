@@ -1,0 +1,29 @@
+{
+  "name": "product-spotlight-app",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "npm run dev",
+    "dev": "npm run build:dev && vite preview",
+    "dev:4203": "npm run build:dev && vite preview --port 4203",
+    "build": "node scripts/build.mjs --prod",
+    "build:dev": "node scripts/build.mjs",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@softarc/native-federation": "^4.4.1",
+    "@softarc/native-federation-esbuild": "^4.0.0",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.0",
+    "@types/react": "^19.2.8",
+    "@types/react-dom": "^19.2.3",
+    "esbuild": "^0.28.0",
+    "typescript": "~6.0.2",
+    "vite": "^8.2.0"
+  }
+}

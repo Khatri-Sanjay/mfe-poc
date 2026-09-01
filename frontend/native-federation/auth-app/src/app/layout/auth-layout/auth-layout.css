@@ -1,0 +1,35 @@
+:host {
+  display: block;
+}
+
+.auth-shell {
+  display: grid;
+  min-height: min(34rem, calc(100dvh - 8rem));
+}
+
+.auth-page {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  padding: 2rem 1rem;
+}
+
+:host-context(html[data-theme-owner='shell']) .auth-shell {
+  min-height: min(32rem, calc(100dvh - 11rem));
+}
+
+:host-context(html[data-theme-owner='shell']) .auth-page {
+  padding: 1rem;
+}
+
+@media (max-width: 560px) {
+  .auth-shell,
+  :host-context(html[data-theme-owner='shell']) .auth-shell {
+    min-height: calc(100dvh - 9rem);
+  }
+
+  .auth-page,
+  :host-context(html[data-theme-owner='shell']) .auth-page {
+    padding: 0.75rem;
+  }
+}

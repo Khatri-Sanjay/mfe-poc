@@ -1,0 +1,53 @@
+:root {
+  --price-lens-text: var(--color-text-secondary, #56606f);
+  --price-lens-text-h: var(--color-text-primary, #111827);
+  --price-lens-muted: var(--color-text-muted, #6b7280);
+  --price-lens-bg: var(--color-background, #f5f7f4);
+  --price-lens-surface: var(--color-surface, #fff);
+  --price-lens-surface-muted: var(--color-surface-muted, #edf4f1);
+  --price-lens-border: var(--color-border, #d7e1dc);
+  --price-lens-accent: var(--color-primary, #12473f);
+  --price-lens-accent-hover: var(--color-primary-hover, #0b332e);
+  --price-lens-positive: var(--color-success, #0f7a4f);
+  --price-lens-positive-bg: var(--color-success-soft, #f2fbf6);
+  --price-lens-danger-bg: var(--color-danger-surface, #fff8f7);
+  --price-lens-danger-border: var(--color-danger-border, #f5b5ae);
+
+  color-scheme: light dark;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --price-lens-text: var(--color-text-secondary, #a7b0bf);
+    --price-lens-text-h: var(--color-text-primary, #f8fafc);
+    --price-lens-muted: var(--color-text-muted, #94a3b8);
+    --price-lens-bg: var(--color-background, #0f172a);
+    --price-lens-surface: var(--color-surface, #111c32);
+    --price-lens-surface-muted: var(--color-surface-muted, #17233a);
+    --price-lens-border: var(--color-border, #273449);
+    --price-lens-accent: var(--color-primary, #3b82f6);
+    --price-lens-accent-hover: var(--color-primary-hover, #2563eb);
+    --price-lens-positive: var(--color-success, #34d399);
+    --price-lens-positive-bg: var(--color-success-soft, rgba(16, 185, 129, 0.12));
+    --price-lens-danger-bg: var(--color-danger-surface, rgba(244, 63, 94, 0.12));
+    --price-lens-danger-border: var(--color-danger-border, rgba(244, 63, 94, 0.45));
+  }
+}
+
+#root {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}

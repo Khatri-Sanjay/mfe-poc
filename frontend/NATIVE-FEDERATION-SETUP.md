@@ -24,6 +24,9 @@ This is not a generic Micro Frontend guide and not a Webpack Module Federation t
   - [6.3 Vue to Vue](#63-vue-to-vue)
 - [7. Cross-Framework Federation](#7-cross-framework-federation)
   - [7.1 Angular Host to React Remote](#71-angular-host-to-react-remote)
+    - [7.1.1 React Widget Inside an Angular Page](#711-react-widget-inside-an-angular-page)
+    - [7.1.2 React Remote as a Full Angular Route](#712-react-remote-as-a-full-angular-route)
+    - [7.1.3 Can Angular Load React Routes Directly?](#713-can-angular-load-react-routes-directly)
   - [7.2 Angular Host to Vue Remote](#72-angular-host-to-vue-remote)
   - [7.3 React Host to Angular Remote](#73-react-host-to-angular-remote)
   - [7.4 React Host to Vue Remote](#74-react-host-to-vue-remote)
@@ -750,6 +753,15 @@ Recommended integration:
 - Expose a module that registers a Web Component.
 - Or expose a framework-neutral `mount(element, props)` function and call it from an Angular wrapper component.
 
+Important routing rule:
+
+- Angular Router can only navigate to Angular routes and Angular components.
+- React Router routes are not Angular `Routes`.
+- To make a React remote behave like Angular route navigation, create an Angular route in the shell that loads an Angular wrapper component.
+- That wrapper loads the React remote and renders the React-owned Web Component or mount target.
+
+The React remote can therefore appear as a full page in the Angular shell, but the route itself still belongs to Angular.
+
 Preferred architecture:
 
 ```mermaid
@@ -895,6 +907,444 @@ GET http://localhost:3000/api/v1/products?limit=6&sortBy=price&sortOrder=asc&inS
 ```
 
 React dependencies are not shared with the Angular apps in this example. The remote bundles its own `react` and `react-dom` because it is the only React app in this repository.
+
+#### 7.1.1 React Widget Inside an Angular Page
+
+Use this when the React remote is only part of an Angular page, such as the current product spotlight on the shell home page.
+
+Current repository flow:
+
+```text
+/                         Angular shell home route
+  -> HomePage             Angular page component
+    -> ProductSpotlightRemoteComponent
+      -> loads product_spotlight_app ./register
+      -> renders <product-spotlight-widget>
+```
+
+The Angular route remains local:
+
+```ts
+{
+  path: '',
+  loadComponent: () => import('./features/home/home.page').then((m) => m.HomePage),
+}
+```
+
+The home page imports the Angular wrapper component:
+
+```ts
+@Component({
+  standalone: true,
+  imports: [RouterLink, MoneyPipe, ProductSpotlightRemoteComponent],
+})
+export class HomePage {}
+```
+
+The wrapper is responsible for Native Federation loading, Web Component registration, event listeners, and Angular Router navigation.
+
+#### 7.1.2 React Remote as a Full Angular Route
+
+Use this when the React feature should have its own URL, for example:
+
+```text
+/spotlight
+/reports
+/recommendations
+```
+
+Do not try to expose React Router route objects to Angular. Instead, create an Angular route that renders a wrapper component.
+
+Shell route:
+
+```ts
+// shell-app/src/app/app.routes.ts
+{
+  path: 'spotlight',
+  loadComponent: () =>
+    import('./features/product-spotlight/product-spotlight-page.component').then(
+      (m) => m.ProductSpotlightPageComponent,
+    ),
+}
+```
+
+Angular page wrapper:
+
+```ts
+// shell-app/src/app/features/product-spotlight/product-spotlight-page.component.ts
+import { CUSTOM_ELEMENTS_SCHEMA, Component, ElementRef, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
+import { Router } from '@angular/router';
+import { environment } from '../../../environments/environment';
+import { loadRemoteFromEntry } from '../../../federation-loader';
+
+type ProductSpotlightRegisterModule = {
+  registerProductSpotlightElement: (tagName?: string) => void;
+};
+
+@Component({
+  standalone: true,
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
+  template: `
+    <main class="page-shell">
+      <product-spotlight-widget
+        #widget
+        [attr.api-base-url]="apiBaseUrl"
+        heading="Product deals from a React remote"
+        product-url-prefix="/products"
+      ></product-spotlight-widget>
+    </main>
+  `,
+})
+export class ProductSpotlightPageComponent implements OnInit, OnDestroy {
+  @ViewChild('widget') private widget?: ElementRef<HTMLElement>;
+
+  readonly apiBaseUrl = environment.apiBaseUrl;
+  private readonly router = inject(Router);
+  private removeSelectListener?: () => void;
+  private removeViewAllListener?: () => void;
+
+  async ngOnInit(): Promise<void> {
+    const remote = await loadRemoteFromEntry<ProductSpotlightRegisterModule>(
+      environment.productSpotlightRemoteEntry,
+      'product_spotlight_app',
+      './register',
+    );
+
+    remote.registerProductSpotlightElement();
+    queueMicrotask(() => this.listenToWidget());
+  }
+
+  ngOnDestroy(): void {
+    this.removeSelectListener?.();
+    this.removeViewAllListener?.();
+  }
+
+  private listenToWidget(): void {
+    const element = this.widget?.nativeElement;
+    if (!element) return;
+
+    const handleSelect = (event: Event) => {
+      const detail = (event as CustomEvent<{ slug?: string }>).detail;
+      if (detail?.slug) {
+        void this.router.navigate(['/products', detail.slug]);
+      }
+    };
+
+    const handleViewAll = () => {
+      void this.router.navigate(['/products']);
+    };
+
+    element.addEventListener('product-spotlight-select', handleSelect);
+    element.addEventListener('product-spotlight-view-all', handleViewAll);
+
+    this.removeSelectListener = () => element.removeEventListener('product-spotlight-select', handleSelect);
+    this.removeViewAllListener = () => element.removeEventListener('product-spotlight-view-all', handleViewAll);
+  }
+}
+```
+
+Navigation then works like any other Angular route:
+
+```html
+<a routerLink="/spotlight">Product spotlight</a>
+```
+
+Or programmatically:
+
+```ts
+void this.router.navigate(['/spotlight']);
+```
+
+If the React remote has its own internal views, keep them inside the custom element or express the state in the URL as Angular route parameters or query parameters:
+
+```ts
+{
+  path: 'spotlight/:slug',
+  loadComponent: () =>
+    import('./features/product-spotlight/product-spotlight-page.component').then(
+      (m) => m.ProductSpotlightPageComponent,
+    ),
+}
+```
+
+The Angular wrapper can read route params and pass them to the Web Component as attributes or properties. React can update its internal UI, but Angular remains the owner of browser URL navigation.
+
+#### 7.1.3 Can Angular Load React Routes Directly?
+
+Short answer: not directly as Angular routes.
+
+Angular Router can lazy-load:
+
+- Angular `Routes` through `loadChildren`.
+- Angular components through `loadComponent`.
+
+React Router route objects are not Angular `Routes`, and Angular Router cannot render React route elements. This means a React remote cannot expose this and be consumed directly by Angular Router:
+
+```tsx
+// React remote
+export const routes = [
+  { path: '/users', element: <Users /> },
+];
+```
+
+This will not work as an Angular route contract:
+
+```ts
+// Angular host - do not do this for React routes
+{
+  path: 'react',
+  loadChildren: () =>
+    loadRemote<{ routes: unknown }>('react_app', './routes').then((m) => m.routes),
+}
+```
+
+The correct route-owner split is:
+
+```text
+Angular Router owns:
+  /react
+  /react/**
+
+React Router owns:
+  /users
+  /users/:id
+  /settings
+```
+
+Browser URLs still look like normal application routes:
+
+```text
+/react/users
+/react/users/123
+/react/settings
+```
+
+React sees those routes relative to its basename:
+
+```text
+/users
+/users/123
+/settings
+```
+
+Use one reusable Angular outlet component if you do not want to create a custom Angular wrapper for every React route area.
+
+Shell route:
+
+```ts
+// shell-app/src/app/app.routes.ts
+{
+  path: 'react',
+  children: [
+    {
+      path: '',
+      loadComponent: () =>
+        import('./features/react-remote/react-remote-outlet.component').then(
+          (m) => m.ReactRemoteOutletComponent,
+        ),
+    },
+    {
+      path: '**',
+      loadComponent: () =>
+        import('./features/react-remote/react-remote-outlet.component').then(
+          (m) => m.ReactRemoteOutletComponent,
+        ),
+    },
+  ],
+}
+```
+
+The `path: '**'` child is important. Without it, Angular tries to match `/react/users` as Angular child routes and the React app is never mounted.
+
+Reusable Angular outlet:
+
+```ts
+// shell-app/src/app/features/react-remote/react-remote-outlet.component.ts
+import {
+  AfterViewInit,
+  Component,
+  ElementRef,
+  OnDestroy,
+  ViewChild,
+} from '@angular/core';
+import { loadRemote } from '../../../federation-loader';
+
+type ReactRemoteModule = {
+  mount: (
+    element: HTMLElement,
+    options: { basename: string },
+  ) => { unmount: () => void };
+};
+
+@Component({
+  selector: 'app-react-remote-outlet',
+  standalone: true,
+  template: '<div class="react-remote-outlet" #outlet></div>',
+  styles: [
+    `
+      :host {
+        display: block;
+        min-height: 100%;
+      }
+
+      .react-remote-outlet {
+        min-height: 100%;
+      }
+    `,
+  ],
+})
+export class ReactRemoteOutletComponent implements AfterViewInit, OnDestroy {
+  @ViewChild('outlet', { static: true })
+  private readonly outlet!: ElementRef<HTMLElement>;
+
+  private remoteRoot?: { unmount: () => void };
+
+  async ngAfterViewInit(): Promise<void> {
+    const remote = await loadRemote<ReactRemoteModule>('react_app', './mount');
+
+    this.remoteRoot = remote.mount(this.outlet.nativeElement, {
+      basename: '/react',
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.remoteRoot?.unmount();
+  }
+}
+```
+
+Shell manifest:
+
+```json
+{
+  "auth_app": "http://localhost:4201/remoteEntry.json",
+  "admin_app": "http://localhost:4202/remoteEntry.json",
+  "react_app": "http://localhost:4203/remoteEntry.json"
+}
+```
+
+React remote federation config:
+
+```js
+// react-app/federation.config.mjs
+import { withNativeFederation } from '@softarc/native-federation/config';
+
+export default withNativeFederation({
+  name: 'react_app',
+
+  exposes: {
+    './mount': './src/mount.tsx',
+  },
+
+  shared: {},
+});
+```
+
+React mount contract:
+
+```tsx
+// react-app/src/mount.tsx
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { createRoot, Root } from 'react-dom/client';
+import { Users } from './pages/Users';
+import { UserDetails } from './pages/UserDetails';
+import { Settings } from './pages/Settings';
+
+type MountOptions = {
+  basename: string;
+};
+
+export function mount(element: HTMLElement, options: MountOptions) {
+  const root: Root = createRoot(element);
+
+  root.render(
+    <BrowserRouter basename={options.basename}>
+      <Routes>
+        <Route path="/" element={<Users />} />
+        <Route path="/users" element={<Users />} />
+        <Route path="/users/:id" element={<UserDetails />} />
+        <Route path="/settings" element={<Settings />} />
+      </Routes>
+    </BrowserRouter>,
+  );
+
+  return {
+    unmount: () => root.unmount(),
+  };
+}
+```
+
+Navigation from Angular into the React area:
+
+```html
+<a routerLink="/react/users">React users</a>
+```
+
+Programmatic Angular navigation:
+
+```ts
+void this.router.navigate(['/react', 'users', userId]);
+```
+
+Navigation inside React:
+
+```tsx
+import { Link } from 'react-router-dom';
+
+export function UsersLink() {
+  return <Link to="/users">Users</Link>;
+}
+```
+
+Because the router has `basename="/react"`, React generates `/react/users` in the browser while route matching inside React remains `/users`.
+
+Current Price Lens implementation in this repository uses this route-level React pattern:
+
+```text
+shell-app /price-lens
+shell-app /price-lens/:productId
+  -> PriceLensRemoteComponent
+    -> loadRemote('price_lens_product_app', './mount')
+      -> price-lens-product-app/src/mount.tsx
+        -> React Price Lens comparison UI
+```
+
+Shell manifest entry:
+
+```json
+{
+  "price_lens_product_app": "http://localhost:4204/remoteEntry.json"
+}
+```
+
+Shell route:
+
+```ts
+{
+  path: 'price-lens/:productId',
+  loadComponent: () =>
+    import('./features/price-lens/price-lens-remote.component').then(
+      (m) => m.PriceLensRemoteComponent,
+    ),
+}
+```
+
+The shell header links to `/price-lens`, and product detail pages link to `/price-lens/:productId` so the React remote can immediately call:
+
+```text
+GET /api/v1/product-comparison/:productId
+```
+
+Use this pattern when:
+
+- The React remote is a route-level application area.
+- React should own nested pages such as users, settings, and details.
+- Angular should still own the shell layout, authentication gate, top-level navigation, and remote loading.
+
+Do not use this pattern when:
+
+- The remote is only a small widget inside an Angular page. Use the Web Component registration pattern instead.
+- The React routes must participate in Angular guards, resolvers, route data, or Angular child outlets individually. In that case, model those URLs as Angular routes and pass route state into React explicitly.
 
 ### 7.2 Angular Host to Vue Remote
 
@@ -1620,6 +2070,47 @@ flowchart TD
 For cross-framework UI, the host route normally renders a wrapper component. The wrapper loads the remote module and mounts a Web Component or calls a mount API.
 
 Do not expose React Router routes and expect Angular Router to understand them. Do not expose Angular `Routes` and expect React Router or Vue Router to consume them directly.
+
+Angular-style navigation to a React remote means this shape:
+
+```text
+Angular Router URL
+  -> Angular shell route
+    -> Angular wrapper component
+      -> Native Federation loads React registration module
+        -> wrapper renders React-backed custom element
+```
+
+Example shell route:
+
+```ts
+{
+  path: 'spotlight',
+  loadComponent: () =>
+    import('./features/product-spotlight/product-spotlight-page.component').then(
+      (m) => m.ProductSpotlightPageComponent,
+    ),
+}
+```
+
+Example shell navigation:
+
+```html
+<a routerLink="/spotlight">Product spotlight</a>
+```
+
+Example event-to-router handoff from the wrapper:
+
+```ts
+element.addEventListener('product-spotlight-select', (event: Event) => {
+  const detail = (event as CustomEvent<{ slug?: string }>).detail;
+  if (detail?.slug) {
+    void this.router.navigate(['/products', detail.slug]);
+  }
+});
+```
+
+This gives users normal Angular Router behavior: address-bar URLs, `RouterLink`, guards around the wrapper route, lazy loading, shell layout, and browser back/forward support. The React remote owns only the UI inside its Web Component or mount target.
 
 ## 12. Shared Dependencies
 

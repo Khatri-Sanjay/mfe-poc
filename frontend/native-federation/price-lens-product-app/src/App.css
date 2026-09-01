@@ -1,0 +1,254 @@
+.price-lens {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 32px;
+  color: var(--price-lens-text);
+  font: 16px/145% system-ui, 'Segoe UI', Roboto, sans-serif;
+  letter-spacing: 0;
+  text-align: left;
+}
+
+.price-lens .price-lens__header,
+.price-lens .product-summary,
+.price-lens .section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.price-lens .eyebrow,
+.price-lens .badge,
+.price-lens .market-signal span,
+.price-lens .metrics-grid span,
+.price-lens .section-heading span {
+  color: var(--price-lens-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.price-lens h1,
+.price-lens h2,
+.price-lens p {
+  margin: 0;
+}
+
+.price-lens h1 {
+  color: var(--price-lens-text-h);
+  font-weight: 800;
+  font-size: 40px;
+  line-height: 1.05;
+}
+
+.price-lens h2 {
+  color: var(--price-lens-text-h);
+  font-weight: 800;
+  font-size: 22px;
+  line-height: 1.2;
+}
+
+.price-lens .product-form {
+  display: grid;
+  gap: 8px;
+  min-width: min(420px, 100%);
+}
+
+.price-lens .product-form > div {
+  display: flex;
+  gap: 8px;
+}
+
+.price-lens .product-form label {
+  color: var(--price-lens-text-h);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.price-lens .product-form input {
+  min-width: 0;
+  flex: 1;
+  border: 1px solid var(--price-lens-border);
+  border-radius: 6px;
+  background: var(--price-lens-surface);
+  color: var(--price-lens-text-h);
+  font: inherit;
+  font-size: 14px;
+  padding: 10px 12px;
+}
+
+.price-lens .product-form button {
+  border: 0;
+  border-radius: 6px;
+  background: var(--price-lens-accent);
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  padding: 10px 16px;
+}
+
+.price-lens .product-form button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.price-lens .empty-state,
+.price-lens .product-summary,
+.price-lens .metrics-grid article,
+.price-lens .comparison-section,
+.price-lens .recommendations article {
+  border: 1px solid var(--price-lens-border);
+  border-radius: 8px;
+  background: var(--price-lens-surface);
+}
+
+.price-lens .empty-state {
+  display: grid;
+  gap: 8px;
+  padding: 32px;
+  text-align: center;
+}
+
+.price-lens .empty-state--error {
+  border-color: var(--price-lens-danger-border);
+  background: var(--price-lens-danger-bg);
+}
+
+.price-lens .product-summary {
+  padding: 24px;
+}
+
+.price-lens .market-signal {
+  display: grid;
+  gap: 6px;
+  min-width: 180px;
+  text-align: right;
+}
+
+.price-lens .market-signal strong {
+  color: var(--price-lens-positive);
+  font-size: 30px;
+  line-height: 1;
+}
+
+.price-lens .metrics-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.price-lens .metrics-grid article {
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+}
+
+.price-lens .metrics-grid strong {
+  color: var(--price-lens-text-h);
+  font-size: 24px;
+}
+
+.price-lens .comparison-section {
+  overflow: hidden;
+}
+
+.price-lens .section-heading {
+  border-bottom: 1px solid var(--price-lens-border);
+  padding: 18px 20px;
+}
+
+.price-lens .table-wrap {
+  overflow-x: auto;
+}
+
+.price-lens table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 720px;
+}
+
+.price-lens th,
+.price-lens td {
+  border-bottom: 1px solid var(--price-lens-border);
+  padding: 14px 20px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.price-lens th {
+  color: var(--price-lens-muted);
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.price-lens td {
+  color: var(--price-lens-text);
+  font-size: 14px;
+}
+
+.price-lens td strong {
+  display: block;
+  color: var(--price-lens-text-h);
+}
+
+.price-lens td span {
+  display: block;
+  margin-top: 2px;
+  max-width: 360px;
+}
+
+.price-lens tr.is-cheapest {
+  background: var(--price-lens-positive-bg);
+}
+
+.price-lens tr.is-cheapest td:first-child strong::after {
+  content: 'Lowest';
+  display: inline-flex;
+  margin-left: 8px;
+  border-radius: 999px;
+  background: var(--price-lens-positive);
+  color: #fff;
+  font-size: 11px;
+  padding: 2px 8px;
+}
+
+.price-lens .recommendations {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.price-lens .recommendations article {
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+}
+
+.price-lens .recommendations strong {
+  color: var(--price-lens-text-h);
+  font-size: 20px;
+}
+
+@media (max-width: 840px) {
+  .price-lens {
+    padding: 20px;
+  }
+
+  .price-lens .price-lens__header,
+  .price-lens .product-summary {
+    flex-direction: column;
+  }
+
+  .price-lens .market-signal {
+    text-align: left;
+  }
+
+  .price-lens .metrics-grid,
+  .price-lens .recommendations {
+    grid-template-columns: 1fr;
+  }
+}

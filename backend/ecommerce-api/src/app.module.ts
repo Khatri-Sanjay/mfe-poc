@@ -33,6 +33,7 @@ import { RefundsModule } from './modules/refunds/refunds.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { ShippingModule } from './modules/shipping/shipping.module';
 import { WishlistsModule } from './modules/wishlists/wishlists.module';
+import { ProductComparisonModule } from './modules/product-comparison/product-comparison.module';
 
 @Module({
 	imports: [
@@ -92,6 +93,7 @@ import { WishlistsModule } from './modules/wishlists/wishlists.module';
 		OrdersModule,
 		CheckoutModule,
 		ReviewsModule,
+		ProductComparisonModule,
 		HealthModule
 	],
 	providers: [

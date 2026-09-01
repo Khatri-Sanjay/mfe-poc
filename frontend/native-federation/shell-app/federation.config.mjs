@@ -8,6 +8,7 @@ export default withNativeFederation({
     auth_app: 'http://localhost:4201/remoteEntry.json',
     // Admin app (remote) — exposes admin dashboard
     admin_app: 'http://localhost:4202/remoteEntry.json',
+    price_lens_product_app: 'http://localhost:4204/remoteEntry.json',
   },
 
   shared: {
