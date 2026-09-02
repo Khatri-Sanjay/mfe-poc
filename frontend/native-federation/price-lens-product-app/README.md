@@ -4,13 +4,19 @@ React Native Federation remote for product price comparison and product intellig
 
 ## Feature
 
-Price Lens compares one existing catalog product against normalized external source offers from the backend:
+Price Lens searches by product name and compares normalized marketplace offers from the backend:
 
 ```text
-GET http://localhost:3000/api/v1/product-comparison/:productId
+GET http://localhost:3000/api/v1/product-comparison/search/items?query=<product-name>
 ```
 
-The current backend uses mock source adapters, so the full flow works without retailer API keys or scraping.
+The backend uses source adapters. Local adapters return deterministic Amazon, Flipkart, and Croma-style offers so the flow works without retailer API keys. Production adapters can be replaced with authorized marketplace APIs, feeds, or scraping providers without changing the remote contract.
+
+Configure the backend URL when deploying the remote independently:
+
+```bash
+VITE_PRICE_LENS_API_BASE_URL=https://api.example.com/api/v1
+```
 
 ## Local Development
 
@@ -29,7 +35,8 @@ npm run dev:4204
 Open:
 
 ```text
-http://localhost:4204?productId=<product-uuid>
+http://localhost:4204/price-lens
+http://localhost:4204/price-lens/search/iphone%2015
 ```
 
 ## Native Federation Contract
@@ -46,15 +53,14 @@ Shell usage:
 type PriceLensRemote = {
   mount: (
     element: HTMLElement,
-    options?: { apiBaseUrl?: string; productId?: string },
+    options?: { routeBasePath?: string },
   ) => { unmount: () => void };
 };
 
 const remote = await loadRemote<PriceLensRemote>('price_lens_product_app', './mount');
 
 const root = remote.mount(outletElement, {
-  apiBaseUrl: 'http://localhost:3000/api/v1',
-  productId,
+  routeBasePath: '/price-lens',
 });
 ```
 
@@ -66,8 +72,11 @@ root.unmount();
 
 ## Files
 
-- `src/App.tsx`: comparison UI, loading, error, and manual product ID entry.
+- `src/App.tsx`: React Router app shell.
+- `src/routes/AppRoutes.tsx`: React route definitions.
+- `src/pages/PriceLensPage.tsx`: product search and comparison UI.
 - `src/api.ts`: typed API client.
+- `src/config.ts`: remote-owned API URL configuration.
 - `src/types.ts`: backend response types.
 - `src/mount.tsx`: Native Federation mount contract.
 - `federation.config.mjs`: remote name and exposed module.

@@ -1,3 +1,4 @@
 {
-  "auth_app": "http://localhost:4201/remoteEntry.json"
+  "auth_app": "http://localhost:4201/remoteEntry.json",
+  "productManager": "http://localhost:4205/remoteEntry.json"
 }

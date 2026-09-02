@@ -1,5 +1,5 @@
 import { CUSTOM_ELEMENTS_SCHEMA, Component, ElementRef, inject, OnDestroy, OnInit, ViewChild } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { loadRemoteFromEntry } from '../../../federation-loader';
 
@@ -16,15 +16,32 @@ type ProductSpotlightSelectEvent = CustomEvent<{
 @Component({
   selector: 'app-product-spotlight-remote',
   standalone: true,
-  imports: [RouterLink],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
+    @if (status === 'loading') {
+      <section class="remote-placeholder" aria-live="polite" aria-busy="true">
+        <span class="skeleton-line w40"></span>
+        <span class="skeleton-line w80"></span>
+        <span class="skeleton-line w100"></span>
+      </section>
+    }
+
+    @if (status === 'error') {
+      <section class="remote-placeholder" role="status">
+        <p class="eyebrow">Product spotlight</p>
+        <h2>Featured products are unavailable</h2>
+        <p>The React remote could not be loaded. The rest of the storefront can continue running.</p>
+      </section>
+    }
+
+    <div [hidden]="status !== 'ready'">
       <product-spotlight-widget
         #widget
         [attr.api-base-url]="apiBaseUrl"
         heading="Product deals from a React remote"
         product-url-prefix="/products"
       ></product-spotlight-widget>
+    </div>
   `,
   styles: `
     :host {

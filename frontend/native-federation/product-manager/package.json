@@ -1,0 +1,43 @@
+{
+  "name": "product-manager",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npm run remote",
+    "next:dev": "next dev --port 4205",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint",
+    "remote": "npm run remote:build:dev && npm run remote:preview",
+    "remote:build": "node scripts/build.mjs --prod",
+    "remote:build:dev": "node scripts/build.mjs",
+    "remote:preview": "vite preview --host 0.0.0.0 --port 4205 --strictPort",
+    "remote:typecheck": "tsc -p tsconfig.remote.json --noEmit"
+  },
+  "dependencies": {
+    "@module-federation/vite": "^1.21.2",
+    "@softarc/native-federation": "^4.5.0",
+    "@softarc/native-federation-esbuild": "^4.0.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "axios": "^1.20.0",
+    "next": "16.3.4",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "react-hook-form": "^7.87.0",
+    "react-router-dom": "^7.18.3",
+    "vite": "^8.2.2",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "esbuild": "^0.28.0",
+    "eslint": "^9",
+    "eslint-config-next": "16.3.4",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}

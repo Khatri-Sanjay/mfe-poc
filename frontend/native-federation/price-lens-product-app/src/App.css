@@ -1,33 +1,30 @@
 .price-lens {
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  padding: 32px;
+  gap: 1rem;
+  width: 100%;
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 1.25rem;
   color: var(--price-lens-text);
-  font: 16px/145% system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  font-size: 1rem;
+  line-height: 1.45;
   letter-spacing: 0;
   text-align: left;
 }
 
-.price-lens .price-lens__header,
-.price-lens .product-summary,
-.price-lens .section-heading {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 24px;
-}
-
-.price-lens .eyebrow,
-.price-lens .badge,
-.price-lens .market-signal span,
-.price-lens .metrics-grid span,
-.price-lens .section-heading span {
-  color: var(--price-lens-muted);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0;
-  text-transform: uppercase;
+.price-lens *,
+.price-lens *::before,
+.price-lens *::after {
+  box-sizing: border-box;
 }
 
 .price-lens h1,
@@ -36,59 +33,133 @@
   margin: 0;
 }
 
+.price-lens small {
+  color: var(--price-lens-muted);
+  font-size: 0.84rem;
+  font-weight: 760;
+}
+
 .price-lens h1 {
+  max-width: 48rem;
   color: var(--price-lens-text-h);
-  font-weight: 800;
-  font-size: 40px;
-  line-height: 1.05;
+  font-size: 2.35rem;
+  font-weight: 850;
+  line-height: 1.08;
 }
 
 .price-lens h2 {
   color: var(--price-lens-text-h);
-  font-weight: 800;
-  font-size: 22px;
+  font-size: 1.25rem;
+  font-weight: 820;
   line-height: 1.2;
+}
+
+.price-lens .eyebrow,
+.price-lens .badge,
+.price-lens .market-signal span,
+.price-lens .metrics-grid span,
+.price-lens .section-heading span,
+.price-lens .quick-searches span,
+.price-lens .region-pill {
+  color: var(--price-lens-muted);
+  font-size: 0.74rem;
+  font-weight: 820;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.price-lens .search-panel,
+.price-lens .empty-state,
+.price-lens .product-summary,
+.price-lens .top-offer-strip,
+.price-lens .metrics-grid article,
+.price-lens .comparison-section,
+.price-lens .recommendations article {
+  border: 1px solid var(--price-lens-border);
+  border-radius: var(--price-lens-radius-lg);
+  background: var(--price-lens-surface);
+}
+
+.price-lens .search-panel {
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.4rem;
+  box-shadow: var(--price-lens-shadow);
+}
+
+.price-lens .search-panel__copy {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.price-lens .search-panel__copy > p:last-child {
+  max-width: 46rem;
+  color: var(--price-lens-text);
 }
 
 .price-lens .product-form {
   display: grid;
-  gap: 8px;
-  min-width: min(420px, 100%);
+  gap: 0.5rem;
+  width: 100%;
 }
 
 .price-lens .product-form > div {
-  display: flex;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  align-items: stretch;
 }
 
 .price-lens .product-form label {
   color: var(--price-lens-text-h);
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 0.84rem;
+  font-weight: 820;
 }
 
 .price-lens .product-form input {
+  width: 100%;
   min-width: 0;
-  flex: 1;
   border: 1px solid var(--price-lens-border);
-  border-radius: 6px;
+  border-radius: var(--price-lens-radius-md);
   background: var(--price-lens-surface);
   color: var(--price-lens-text-h);
   font: inherit;
-  font-size: 14px;
-  padding: 10px 12px;
+  font-size: 1rem;
+  padding: 0.88rem 0.95rem;
+}
+
+.price-lens .product-form input:focus {
+  border-color: var(--price-lens-accent);
+  outline: 3px solid var(--price-lens-focus);
+}
+
+.price-lens .product-form button,
+.price-lens .quick-searches button,
+.price-lens .top-offer-strip a {
+  min-height: 2.55rem;
+  border-radius: var(--price-lens-radius-md);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 820;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease,
+    transform 0.16s ease;
 }
 
 .price-lens .product-form button {
-  border: 0;
-  border-radius: 6px;
+  min-width: 8.25rem;
+  border: 1px solid var(--price-lens-accent);
   background: var(--price-lens-accent);
-  color: #fff;
-  cursor: pointer;
-  font: inherit;
-  font-size: 14px;
-  font-weight: 700;
-  padding: 10px 16px;
+  color: var(--color-text-inverse, #fff);
+  padding: 0.82rem 1rem;
+}
+
+.price-lens .product-form button:hover:not(:disabled),
+.price-lens .top-offer-strip a:hover {
+  background: var(--price-lens-accent-hover);
+  border-color: var(--price-lens-accent-hover);
 }
 
 .price-lens .product-form button:disabled {
@@ -96,21 +167,36 @@
   opacity: 0.55;
 }
 
-.price-lens .empty-state,
-.price-lens .product-summary,
-.price-lens .metrics-grid article,
-.price-lens .comparison-section,
-.price-lens .recommendations article {
+.price-lens .quick-searches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.price-lens .quick-searches button {
   border: 1px solid var(--price-lens-border);
-  border-radius: 8px;
-  background: var(--price-lens-surface);
+  background: var(--price-lens-surface-muted);
+  color: var(--price-lens-text-h);
+  font-size: 0.82rem;
+  padding: 0.46rem 0.72rem;
+}
+
+.price-lens .quick-searches button:hover {
+  border-color: var(--price-lens-accent);
+  color: var(--price-lens-accent);
 }
 
 .price-lens .empty-state {
   display: grid;
-  gap: 8px;
-  padding: 32px;
+  gap: 0.45rem;
+  padding: 2rem;
   text-align: center;
+}
+
+.price-lens .empty-state--guide {
+  border-style: dashed;
+  background: var(--price-lens-surface-subtle);
 }
 
 .price-lens .empty-state--error {
@@ -118,38 +204,110 @@
   background: var(--price-lens-danger-bg);
 }
 
-.price-lens .product-summary {
-  padding: 24px;
+.price-lens .empty-state--error h2 {
+  color: var(--price-lens-danger);
+}
+
+.price-lens .product-summary,
+.price-lens .top-offer-strip,
+.price-lens .section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1.25rem;
+}
+
+.price-lens .product-summary,
+.price-lens .top-offer-strip {
+  padding: 1.2rem;
+}
+
+.price-lens .product-summary p {
+  color: var(--price-lens-text);
 }
 
 .price-lens .market-signal {
   display: grid;
-  gap: 6px;
-  min-width: 180px;
+  gap: 0.35rem;
+  min-width: 13rem;
   text-align: right;
 }
 
 .price-lens .market-signal strong {
   color: var(--price-lens-positive);
-  font-size: 30px;
+  font-size: 1.85rem;
   line-height: 1;
 }
 
-.price-lens .metrics-grid {
+.price-lens .top-offer-strip {
+  align-items: center;
+  border-color: var(--price-lens-positive-border);
+  background: linear-gradient(180deg, var(--price-lens-positive-bg), var(--price-lens-surface));
+}
+
+.price-lens .top-offer-strip > div {
   display: grid;
-  gap: 12px;
+  gap: 0.22rem;
+  min-width: 0;
+}
+
+.price-lens .top-offer-strip strong {
+  color: var(--price-lens-text-h);
+  font-size: 1.05rem;
+}
+
+.price-lens .top-offer-strip a {
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+  border: 1px solid var(--price-lens-accent);
+  background: var(--price-lens-accent);
+  color: var(--color-text-inverse, #fff);
+  padding: 0.68rem 0.9rem;
+  text-decoration: none;
+}
+
+.price-lens .metrics-grid,
+.price-lens .recommendations {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.price-lens .metrics-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-.price-lens .metrics-grid article {
+.price-lens .recommendations {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.price-lens .metrics-grid article,
+.price-lens .recommendations article {
   display: grid;
-  gap: 8px;
-  padding: 18px;
+  gap: 0.4rem;
+  min-width: 0;
+  padding: 1rem;
+}
+
+.price-lens .metrics-grid p,
+.price-lens .recommendations p {
+  color: var(--price-lens-muted);
+  font-size: 0.86rem;
+}
+
+.price-lens .metrics-grid strong,
+.price-lens .recommendations strong {
+  min-width: 0;
+  color: var(--price-lens-text-h);
+  overflow-wrap: anywhere;
 }
 
 .price-lens .metrics-grid strong {
-  color: var(--price-lens-text-h);
-  font-size: 24px;
+  font-size: 1.32rem;
+}
+
+.price-lens .recommendations strong {
+  font-size: 1.08rem;
 }
 
 .price-lens .comparison-section {
@@ -158,7 +316,7 @@
 
 .price-lens .section-heading {
   border-bottom: 1px solid var(--price-lens-border);
-  padding: 18px 20px;
+  padding: 1rem 1.1rem;
 }
 
 .price-lens .table-wrap {
@@ -167,27 +325,28 @@
 
 .price-lens table {
   width: 100%;
+  min-width: 68rem;
   border-collapse: collapse;
-  min-width: 720px;
 }
 
 .price-lens th,
 .price-lens td {
   border-bottom: 1px solid var(--price-lens-border);
-  padding: 14px 20px;
+  padding: 0.86rem 1rem;
   text-align: left;
   vertical-align: top;
 }
 
 .price-lens th {
   color: var(--price-lens-muted);
-  font-size: 12px;
+  font-size: 0.74rem;
+  font-weight: 820;
   text-transform: uppercase;
 }
 
 .price-lens td {
   color: var(--price-lens-text);
-  font-size: 14px;
+  font-size: 0.9rem;
 }
 
 .price-lens td strong {
@@ -195,10 +354,34 @@
   color: var(--price-lens-text-h);
 }
 
-.price-lens td span {
+.price-lens td span:not(.region-pill) {
   display: block;
-  margin-top: 2px;
-  max-width: 360px;
+  margin-top: 0.18rem;
+  color: var(--price-lens-muted);
+  font-size: 0.78rem;
+}
+
+.price-lens .region-pill {
+  display: inline-flex;
+  border: 1px solid var(--price-lens-border);
+  border-radius: 999px;
+  background: var(--price-lens-surface-muted);
+  color: var(--price-lens-text-h);
+  padding: 0.18rem 0.55rem;
+  white-space: nowrap;
+}
+
+.price-lens td a {
+  display: inline-block;
+  margin-top: 0.24rem;
+  color: var(--price-lens-accent);
+  font-size: 0.82rem;
+  font-weight: 820;
+  text-decoration: none;
+}
+
+.price-lens td a:hover {
+  color: var(--price-lens-accent-hover);
 }
 
 .price-lens tr.is-cheapest {
@@ -208,42 +391,58 @@
 .price-lens tr.is-cheapest td:first-child strong::after {
   content: 'Lowest';
   display: inline-flex;
-  margin-left: 8px;
+  margin-left: 0.5rem;
   border-radius: 999px;
   background: var(--price-lens-positive);
-  color: #fff;
-  font-size: 11px;
-  padding: 2px 8px;
+  color: var(--color-text-inverse, #fff);
+  font-size: 0.68rem;
+  padding: 0.1rem 0.48rem;
 }
 
-.price-lens .recommendations {
-  display: grid;
-  gap: 12px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.price-lens .recommendations article {
-  display: grid;
-  gap: 8px;
-  padding: 18px;
-}
-
-.price-lens .recommendations strong {
-  color: var(--price-lens-text-h);
-  font-size: 20px;
-}
-
-@media (max-width: 840px) {
+@media (max-width: 920px) {
   .price-lens {
-    padding: 20px;
+    padding: 1rem;
   }
 
-  .price-lens .price-lens__header,
-  .price-lens .product-summary {
+  .price-lens h1 {
+    font-size: 1.9rem;
+  }
+
+  .price-lens .metrics-grid,
+  .price-lens .recommendations {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .price-lens {
+    padding: 0.8rem;
+  }
+
+  .price-lens h1 {
+    font-size: 1.6rem;
+  }
+
+  .price-lens .search-panel,
+  .price-lens .product-summary,
+  .price-lens .top-offer-strip {
+    padding: 1rem;
+  }
+
+  .price-lens .product-form > div,
+  .price-lens .product-summary,
+  .price-lens .top-offer-strip {
+    grid-template-columns: 1fr;
     flex-direction: column;
   }
 
+  .price-lens .product-form button,
+  .price-lens .top-offer-strip a {
+    width: 100%;
+  }
+
   .price-lens .market-signal {
+    min-width: 0;
     text-align: left;
   }
 

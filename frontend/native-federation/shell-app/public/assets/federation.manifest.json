@@ -1,5 +1,6 @@
 {
   "auth_app": "http://localhost:4201/remoteEntry.json",
   "admin_app": "http://localhost:4202/remoteEntry.json",
-  "price_lens_product_app": "http://localhost:4204/remoteEntry.json"
+  "price_lens_product_app": "http://localhost:4204/remoteEntry.json",
+  "productManager": "http://localhost:4205/remoteEntry.json"
 }

@@ -28,8 +28,8 @@ export class ComparedProductDto {
 	@ApiPropertyOptional()
 	barcode?: string;
 
-	@ApiProperty()
-	ourPrice!: number;
+	@ApiPropertyOptional()
+	ourPrice?: number;
 
 	@ApiProperty()
 	currency!: string;
@@ -40,10 +40,28 @@ export class ProductComparisonMarketDto {
 	lowestPrice!: number;
 
 	@ApiProperty()
+	lowestPriceUsd!: number;
+
+	@ApiProperty()
+	lowestPriceNpr!: number;
+
+	@ApiProperty()
 	highestPrice!: number;
 
 	@ApiProperty()
+	highestPriceUsd!: number;
+
+	@ApiProperty()
+	highestPriceNpr!: number;
+
+	@ApiProperty()
 	averagePrice!: number;
+
+	@ApiProperty()
+	averagePriceUsd!: number;
+
+	@ApiProperty()
+	averagePriceNpr!: number;
 
 	@ApiProperty()
 	differenceFromLowest!: number;
@@ -58,6 +76,12 @@ export class ProductComparisonOfferDto {
 
 	@ApiProperty()
 	title!: string;
+
+	@ApiPropertyOptional()
+	region?: string;
+
+	@ApiPropertyOptional()
+	countryCode?: string;
 
 	@ApiPropertyOptional()
 	brand?: string;
@@ -77,11 +101,29 @@ export class ProductComparisonOfferDto {
 	@ApiProperty()
 	price!: number;
 
+	@ApiProperty()
+	priceUsd!: number;
+
+	@ApiProperty()
+	priceNpr!: number;
+
 	@ApiPropertyOptional()
 	shippingCost?: number;
 
 	@ApiProperty()
+	shippingCostUsd!: number;
+
+	@ApiProperty()
+	shippingCostNpr!: number;
+
+	@ApiProperty()
 	totalPrice!: number;
+
+	@ApiProperty()
+	totalPriceUsd!: number;
+
+	@ApiProperty()
+	totalPriceNpr!: number;
 
 	@ApiProperty()
 	currency!: string;

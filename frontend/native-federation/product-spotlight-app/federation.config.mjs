@@ -4,7 +4,7 @@ export default withNativeFederation({
   name: 'product_spotlight_app',
 
   exposes: {
-    './register': './src/register.tsx',
+    './register': './src/remote/register.ts',
   },
 
   shared: {},

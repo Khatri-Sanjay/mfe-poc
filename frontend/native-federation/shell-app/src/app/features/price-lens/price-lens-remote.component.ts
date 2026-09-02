@@ -1,12 +1,10 @@
-import { AfterViewInit, Component, ElementRef, OnDestroy, ViewChild, inject } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
-import { environment } from '../../../environments/environment';
+import { AfterViewInit, Component, ElementRef, OnDestroy, ViewChild } from '@angular/core';
 import { loadRemote } from '../../../federation-loader';
 
 type PriceLensRemoteModule = {
   mount: (
     element: HTMLElement,
-    options?: { apiBaseUrl?: string; productId?: string },
+    options?: { routeBasePath?: string },
   ) => { unmount: () => void };
 };
 
@@ -38,16 +36,13 @@ export class PriceLensRemoteComponent implements AfterViewInit, OnDestroy {
   @ViewChild('outlet', { static: true })
   private readonly outlet!: ElementRef<HTMLElement>;
 
-  private readonly route = inject(ActivatedRoute);
   private remoteRoot?: { unmount: () => void };
 
   async ngAfterViewInit(): Promise<void> {
     const remote = await loadRemote<PriceLensRemoteModule>('price_lens_product_app', './mount');
-    const productId = this.route.snapshot.paramMap.get('productId') ?? undefined;
 
     this.remoteRoot = remote.mount(this.outlet.nativeElement, {
-      apiBaseUrl: environment.apiBaseUrl,
-      productId,
+      routeBasePath: '/price-lens',
     });
   }
 

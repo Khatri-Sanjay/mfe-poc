@@ -26,15 +26,22 @@ export const routes: Routes = [
       {
         path: 'products',
         loadComponent: () =>
-          import('./features/products/product-list/product-list.component').then(
-            (m) => m.ProductListComponent,
+          import('./features/products/product-manager-remote/product-manager-remote.component').then(
+            (m) => m.ProductManagerRemoteComponent,
           ),
       },
       {
-        path: 'products/:id',
+        path: 'products/new',
         loadComponent: () =>
-          import('./features/products/product-editor/product-editor.component').then(
-            (m) => m.ProductEditorComponent,
+          import('./features/products/product-manager-remote/product-manager-remote.component').then(
+            (m) => m.ProductManagerRemoteComponent,
+          ),
+      },
+      {
+        path: 'products/:id/edit',
+        loadComponent: () =>
+          import('./features/products/product-manager-remote/product-manager-remote.component').then(
+            (m) => m.ProductManagerRemoteComponent,
           ),
       },
       {

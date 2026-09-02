@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "npm run dev",
-    "dev": "npm run build:dev && vite preview",
+    "dev": "npm run build:dev && vite preview --port 4204",
     "dev:4204": "npm run build:dev && vite preview --port 4204",
     "build": "node scripts/build.mjs --prod",
     "build:dev": "node scripts/build.mjs",
@@ -17,7 +17,8 @@
     "@softarc/native-federation": "^4.4.1",
     "@softarc/native-federation-esbuild": "^4.0.0",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8"
+    "react-dom": "^19.2.8",
+    "react-router-dom": "^7.18.3"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

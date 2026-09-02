@@ -154,7 +154,7 @@ import { CatalogService } from './catalog.service';
               >
                 <i [class]="wishlist.has(item.id) ? 'bi bi-heart-fill' : 'bi bi-heart'"></i>
               </button>
-              <a class="btn-secondary detail-price-lens-btn" [routerLink]="['/price-lens', item.id]">
+              <a class="btn-secondary detail-price-lens-btn" [routerLink]="['/price-lens', 'search', priceLensQuery(item)]">
                 <i class="bi bi-bar-chart-line"></i>
                 Price Lens
               </a>
@@ -387,6 +387,11 @@ export class ProductDetailPage implements OnInit {
 
   objectEntries(obj: Record<string, string>): [string, string][] {
     return Object.entries(obj);
+  }
+
+  priceLensQuery(product: Product): string {
+    const variant = this.selectedVariant();
+    return [product.brand?.name, product.name, variant?.name].filter(Boolean).join(' ');
   }
 
   useFallbackImage(event: Event): void {

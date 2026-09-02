@@ -84,7 +84,7 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'price-lens/:productId',
+        path: 'price-lens/search/:query',
         loadComponent: () =>
           import('./features/price-lens/price-lens-remote.component').then(
             (m) => m.PriceLensRemoteComponent,

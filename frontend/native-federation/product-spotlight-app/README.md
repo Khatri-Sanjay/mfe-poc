@@ -25,7 +25,7 @@ product_spotlight_app
 Exposed module:
 
 ```text
-./register -> ./src/register.tsx
+./register -> ./src/remote/register.ts
 ```
 
 Remote entry:
@@ -51,6 +51,40 @@ GET http://localhost:3000/api/v1/products?limit=6&sortBy=price&sortOrder=asc&inS
 ```
 
 No backend changes are required because the ecommerce API already exposes public catalog data.
+
+## Structure
+
+The app is structured like a React remote, not like an Angular route remote:
+
+```text
+src/
+  main.tsx
+  remote/
+    register.ts
+    product-spotlight-element.tsx
+  features/
+    product-spotlight/
+      product-spotlight.tsx
+      product-spotlight.styles.ts
+      product-spotlight.types.ts
+      product-spotlight.utils.ts
+      api/
+        product-spotlight.api.ts
+  ProductSpotlight.tsx
+  api.ts
+  register.tsx
+  types.ts
+```
+
+`src/remote/register.ts` is the Native Federation entry. It registers `<product-spotlight-widget>`.
+
+`src/remote/product-spotlight-element.tsx` owns the Web Component lifecycle and React root mount/unmount.
+
+`src/features/product-spotlight/product-spotlight.tsx` owns the React UI and hooks.
+
+The root `ProductSpotlight.tsx`, `api.ts`, `register.tsx`, and `types.ts` files are compatibility facades. New code should import from `src/features/product-spotlight` or `src/remote`.
+
+The widget uses Shadow DOM. Its styles are kept in `product-spotlight.styles.ts` and rendered inside the React tree so the Angular host styles do not leak in and the remote styles do not leak out.
 
 ## Run
 

@@ -11,7 +11,7 @@ export async function loadRemote<T = unknown>(
   remoteName: string,
   exposedModule: string,
 ): Promise<T> {
-  if (!federation) throw new Error('Native Federation has not been initialized.');
-  const { loadRemoteModule } = await federation;
+  const federationResult = federation ?? startFederation('/assets/federation.manifest.json');
+  const { loadRemoteModule } = await federationResult;
   return loadRemoteModule<T>(remoteName, exposedModule);
 }

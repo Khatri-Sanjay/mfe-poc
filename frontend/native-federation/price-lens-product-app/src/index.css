@@ -1,51 +1,34 @@
 :root {
-  --price-lens-text: var(--color-text-secondary, #56606f);
-  --price-lens-text-h: var(--color-text-primary, #111827);
-  --price-lens-muted: var(--color-text-muted, #6b7280);
+  --price-lens-text: var(--color-text-secondary, #475569);
+  --price-lens-text-h: var(--color-text-primary, #10201d);
+  --price-lens-muted: var(--color-text-muted, #6b7b86);
   --price-lens-bg: var(--color-background, #f5f7f4);
-  --price-lens-surface: var(--color-surface, #fff);
+  --price-lens-page-start: var(--color-page-start, #fbfcfb);
+  --price-lens-surface: var(--color-surface, #ffffff);
+  --price-lens-surface-subtle: var(--color-surface-subtle, #fbfdfc);
   --price-lens-surface-muted: var(--color-surface-muted, #edf4f1);
   --price-lens-border: var(--color-border, #d7e1dc);
   --price-lens-accent: var(--color-primary, #12473f);
   --price-lens-accent-hover: var(--color-primary-hover, #0b332e);
+  --price-lens-accent-light: var(--color-primary-light, #24786d);
+  --price-lens-secondary: var(--color-secondary, #c88a2d);
+  --price-lens-secondary-light: var(--color-secondary-light, #f2c66d);
   --price-lens-positive: var(--color-success, #0f7a4f);
   --price-lens-positive-bg: var(--color-success-soft, #f2fbf6);
+  --price-lens-positive-border: var(--color-success-border, rgba(15, 122, 79, 0.22));
+  --price-lens-danger: var(--color-danger, #b42318);
   --price-lens-danger-bg: var(--color-danger-surface, #fff8f7);
-  --price-lens-danger-border: var(--color-danger-border, #f5b5ae);
-
-  color-scheme: light dark;
+  --price-lens-danger-border: var(--color-danger-border, rgba(180, 35, 24, 0.24));
+  --price-lens-focus: var(--color-focus-ring, rgba(18, 71, 63, 0.3));
+  --price-lens-shadow: var(--shadow-sm, 0 8px 24px rgba(15, 23, 42, 0.06));
+  --price-lens-shadow-strong: var(--shadow-md, 0 18px 44px rgba(15, 23, 42, 0.1));
+  --price-lens-radius-sm: var(--radius-sm, 0.35rem);
+  --price-lens-radius-md: var(--radius-md, 0.5rem);
+  --price-lens-radius-lg: var(--radius-lg, 0.75rem);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --price-lens-text: var(--color-text-secondary, #a7b0bf);
-    --price-lens-text-h: var(--color-text-primary, #f8fafc);
-    --price-lens-muted: var(--color-text-muted, #94a3b8);
-    --price-lens-bg: var(--color-background, #0f172a);
-    --price-lens-surface: var(--color-surface, #111c32);
-    --price-lens-surface-muted: var(--color-surface-muted, #17233a);
-    --price-lens-border: var(--color-border, #273449);
-    --price-lens-accent: var(--color-primary, #3b82f6);
-    --price-lens-accent-hover: var(--color-primary-hover, #2563eb);
-    --price-lens-positive: var(--color-success, #34d399);
-    --price-lens-positive-bg: var(--color-success-soft, rgba(16, 185, 129, 0.12));
-    --price-lens-danger-bg: var(--color-danger-surface, rgba(244, 63, 94, 0.12));
-    --price-lens-danger-border: var(--color-danger-border, rgba(244, 63, 94, 0.45));
-  }
-}
-
-#root {
-  width: 100%;
-  max-width: 100%;
-  margin: 0 auto;
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
 }
 
 body {

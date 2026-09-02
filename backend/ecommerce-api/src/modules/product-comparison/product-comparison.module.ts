@@ -4,9 +4,7 @@ import { ProductComparisonController } from './controllers/product-comparison.co
 import { PRODUCT_SOURCES } from './interfaces/product-source.interface';
 import { ProductComparisonService } from './services/product-comparison.service';
 import { ProductMatchingService } from './services/product-matching.service';
-import { MockDataFeedSource } from './sources/mock-data-feed.source';
-import { MockMarketplaceSource } from './sources/mock-marketplace.source';
-import { MockRetailerSource } from './sources/mock-retailer.source';
+import { MarketplaceSearchSource } from './sources/marketplace-search.source';
 
 @Module({
 	imports: [ProductsModule],
@@ -14,17 +12,11 @@ import { MockRetailerSource } from './sources/mock-retailer.source';
 	providers: [
 		ProductComparisonService,
 		ProductMatchingService,
-		MockMarketplaceSource,
-		MockRetailerSource,
-		MockDataFeedSource,
+		MarketplaceSearchSource,
 		{
 			provide: PRODUCT_SOURCES,
-			useFactory: (
-				mockMarketplaceSource: MockMarketplaceSource,
-				mockRetailerSource: MockRetailerSource,
-				mockDataFeedSource: MockDataFeedSource
-			) => [mockMarketplaceSource, mockRetailerSource, mockDataFeedSource],
-			inject: [MockMarketplaceSource, MockRetailerSource, MockDataFeedSource]
+			useFactory: (marketplaceSearchSource: MarketplaceSearchSource) => [marketplaceSearchSource],
+			inject: [MarketplaceSearchSource]
 		}
 	]
 })

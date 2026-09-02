@@ -26,12 +26,14 @@ This is not a generic Micro Frontend guide and not a Webpack Module Federation t
   - [7.1 Angular Host to React Remote](#71-angular-host-to-react-remote)
     - [7.1.1 React Widget Inside an Angular Page](#711-react-widget-inside-an-angular-page)
     - [7.1.2 React Remote as a Full Angular Route](#712-react-remote-as-a-full-angular-route)
-    - [7.1.3 Can Angular Load React Routes Directly?](#713-can-angular-load-react-routes-directly)
+    - [7.1.3 Price Lens React Remote Setup](#713-price-lens-react-remote-setup)
+    - [7.1.4 Can Angular Load React Routes Directly?](#714-can-angular-load-react-routes-directly)
   - [7.2 Angular Host to Vue Remote](#72-angular-host-to-vue-remote)
   - [7.3 React Host to Angular Remote](#73-react-host-to-angular-remote)
   - [7.4 React Host to Vue Remote](#74-react-host-to-vue-remote)
   - [7.5 Vue Host to Angular Remote](#75-vue-host-to-angular-remote)
   - [7.6 Vue Host to React Remote](#76-vue-host-to-react-remote)
+  - [7.7 Next.js and Django With an Angular Host](#77-nextjs-and-django-with-an-angular-host)
 - [8. Web Components With Native Federation](#8-web-components-with-native-federation)
 - [9. Federated JavaScript Modules](#9-federated-javascript-modules)
 - [10. Communication](#10-communication)
@@ -43,6 +45,14 @@ This is not a generic Micro Frontend guide and not a Webpack Module Federation t
 - [12. Shared Dependencies](#12-shared-dependencies)
 - [13. Runtime Loading](#13-runtime-loading)
 - [14. Step-by-Step Implementation Guide](#14-step-by-step-implementation-guide)
+  - [14.1 Choose The Application Role](#141-choose-the-application-role)
+  - [14.2 Make A Pure Angular Application A Host](#142-make-a-pure-angular-application-a-host)
+  - [14.3 Make A Pure Angular Application A Remote](#143-make-a-pure-angular-application-a-remote)
+  - [14.4 Make A Pure Angular Application Host Plus Remote](#144-make-a-pure-angular-application-host-plus-remote)
+  - [14.5 Make A Pure React Application A Remote](#145-make-a-pure-react-application-a-remote)
+  - [14.6 Make A Pure React Application A Host](#146-make-a-pure-react-application-a-host)
+  - [14.7 Make A Next.js Application A Remote](#147-make-a-nextjs-application-a-remote)
+  - [14.8 Make A Next.js Application A Host](#148-make-a-nextjs-application-a-host)
   - [What Changes From a Basic Angular App](#what-changes-from-a-basic-angular-app)
   - [Native Federation Files Added or Changed](#native-federation-files-added-or-changed)
 - [15. Development Setup](#15-development-setup)
@@ -86,9 +96,17 @@ frontend/native-federation/
   auth-app/    # Angular remote, port 4201
   admin-app/   # Angular remote and secondary host, port 4202
   product-spotlight-app/ # React remote Web Component, port 4203
+  price-lens-product-app/ # React remote mount API, port 4204
+  product-manager/ # Next.js app plus React Web Component remote, port 4205
 ```
 
-The current project has Angular-to-Angular route federation and one Angular-to-React cross-framework example. The React remote is integrated through a Web Component boundary, not by importing a React component directly into Angular.
+The current project has Angular-to-Angular route federation and three Angular-to-React cross-framework examples:
+
+- `product-spotlight-app` uses a Web Component boundary.
+- `price-lens-product-app` exposes a framework-neutral `mount(element, options)` API and runs its own React Router internally.
+- `product-manager` remains a standalone Next.js app, and also builds a browser-only React Native Federation remote that registers `<product-manager-mfe>` for the Angular admin route.
+
+Angular never imports a React component directly. The Angular host loads a JavaScript module from the React remote and mounts React into a normal DOM element.
 
 ### Current Repository Facts
 
@@ -107,7 +125,8 @@ These values were inspected from the local project and installed packages.
 | Import map shim | `es-module-shims@2.8.0` |
 | TypeScript | `~6.0.2` |
 | Package manager | `npm@11.13.0` |
-| Existing React apps | `product-spotlight-app` |
+| Existing React apps | `product-spotlight-app`, `price-lens-product-app`, `product-manager` |
+| Existing Next.js apps | `product-manager@next 16.3.4` |
 | Existing Vue apps | None found |
 
 ### Existing Native Federation Applications
@@ -118,13 +137,17 @@ These values were inspected from the local project and installed packages.
 | `auth-app` | Remote | `auth_app` | `4201` | `http://localhost:4201/remoteEntry.json` |
 | `admin-app` | Remote plus host | `admin_app` | `4202` | `http://localhost:4202/remoteEntry.json` |
 | `product-spotlight-app` | React remote Web Component | `product_spotlight_app` | `4203` | `http://localhost:4203/remoteEntry.json` |
+| `price-lens-product-app` | React remote mount API | `price_lens_product_app` | `4204` | `http://localhost:4204/remoteEntry.json` |
+| `product-manager` | Next.js app plus React Web Component remote | `productManager` | `4205` | `http://localhost:4205/remoteEntry.json` |
 
 `shell-app` loads:
 
 ```json
 {
   "auth_app": "http://localhost:4201/remoteEntry.json",
-  "admin_app": "http://localhost:4202/remoteEntry.json"
+  "admin_app": "http://localhost:4202/remoteEntry.json",
+  "price_lens_product_app": "http://localhost:4204/remoteEntry.json",
+  "productManager": "http://localhost:4205/remoteEntry.json"
 }
 ```
 
@@ -132,11 +155,16 @@ These values were inspected from the local project and installed packages.
 
 ```json
 {
-  "auth_app": "http://localhost:4201/remoteEntry.json"
+  "auth_app": "http://localhost:4201/remoteEntry.json",
+  "productManager": "http://localhost:4205/remoteEntry.json"
 }
 ```
 
 `shell-app` dynamically loads `product_spotlight_app` from `ProductSpotlightRemoteComponent` by remote entry URL. It is not placed in the startup manifest because the home-page spotlight is optional and should not block shell bootstrap if the React remote is unavailable.
+
+`shell-app` loads `price_lens_product_app` from the startup manifest because Price Lens has its own top-level route at `/price-lens` and `/price-lens/search/:query`.
+
+`admin-app` loads `productManager` from its own startup manifest because the admin product routes render the Next.js Product Manager's browser-only React remote through a Web Component. `shell-app` also lists `productManager` because `admin-app` can be loaded under `/admin` inside the shell, and nested host/remote loading must still resolve the product remote entry.
 
 ## 2. What Is Native Federation?
 
@@ -273,7 +301,9 @@ A federation manifest is a host-side file that maps remote names to remote entry
 ```json
 {
   "auth_app": "http://localhost:4201/remoteEntry.json",
-  "admin_app": "http://localhost:4202/remoteEntry.json"
+  "admin_app": "http://localhost:4202/remoteEntry.json",
+  "price_lens_product_app": "http://localhost:4204/remoteEntry.json",
+  "productManager": "http://localhost:4205/remoteEntry.json"
 }
 ```
 
@@ -338,14 +368,20 @@ flowchart TD
   Shell["shell-app<br/>Angular host<br/>http://localhost:4200"]
   Auth["auth-app<br/>Angular remote<br/>auth_app<br/>http://localhost:4201/remoteEntry.json"]
   Admin["admin-app<br/>Angular remote plus host<br/>admin_app<br/>http://localhost:4202/remoteEntry.json"]
+  PriceLens["price-lens-product-app<br/>React remote mount API<br/>price_lens_product_app<br/>http://localhost:4204/remoteEntry.json"]
+  ProductManager["product-manager<br/>Next.js app plus React Web Component remote<br/>productManager<br/>http://localhost:4205/remoteEntry.json"]
   Api["Backend API"]
 
   Shell -->|/auth loads ./routes| Auth
   Shell -->|/admin loads ./routes| Admin
+  Shell -->|/price-lens loads ./mount| PriceLens
   Admin -->|/auth loads ./routes| Auth
+  Admin -->|/products loads ./register| ProductManager
   Shell --> Api
   Auth --> Api
   Admin --> Api
+  PriceLens --> Api
+  ProductManager --> Api
 ```
 
 Current exposed modules:
@@ -354,6 +390,8 @@ Current exposed modules:
 | --- | --- | --- | --- |
 | `auth_app` | `./routes` | `./src/app/app.routes.ts` | `routes: Routes` |
 | `admin_app` | `./routes` | `./src/app/app.routes.ts` | `routes: Routes` |
+| `price_lens_product_app` | `./mount` | `./src/mount.tsx` | `mount(element, options)` |
+| `productManager` | `./register` | `./src/remote/register.ts` | `PRODUCT_MANAGER_ELEMENT` and `ProductManagerElement`; also registers `<product-manager-mfe>` |
 
 Current host routes:
 
@@ -367,6 +405,20 @@ Current host routes:
   path: 'admin',
   loadChildren: () =>
     loadRemote<{ routes: Routes }>('admin_app', './routes').then((m) => m.routes),
+},
+{
+  path: 'price-lens',
+  loadComponent: () =>
+    import('./features/price-lens/price-lens-remote.component').then(
+      (m) => m.PriceLensRemoteComponent,
+    ),
+},
+{
+  path: 'price-lens/search/:query',
+  loadComponent: () =>
+    import('./features/price-lens/price-lens-remote.component').then(
+      (m) => m.PriceLensRemoteComponent,
+    ),
 },
 ```
 
@@ -857,7 +909,7 @@ Current repository example:
 shell-app HomePage
   -> ProductSpotlightRemoteComponent
     -> loadRemoteFromEntry('http://localhost:4203/remoteEntry.json', 'product_spotlight_app', './register')
-      -> product-spotlight-app/src/register.tsx
+      -> product-spotlight-app/src/remote/register.ts
         -> customElements.define('product-spotlight-widget', React-backed element)
 ```
 
@@ -868,11 +920,42 @@ The React remote exposes a JavaScript module:
 export default withNativeFederation({
   name: 'product_spotlight_app',
   exposes: {
-    './register': './src/register.tsx',
+    './register': './src/remote/register.ts',
   },
   shared: {},
 });
 ```
+
+The app is organized by responsibility:
+
+```text
+product-spotlight-app/src/
+  remote/
+    register.ts
+    product-spotlight-element.tsx
+  features/product-spotlight/
+    product-spotlight.tsx
+    product-spotlight.styles.ts
+    product-spotlight.types.ts
+    product-spotlight.utils.ts
+    api/product-spotlight.api.ts
+  main.tsx
+```
+
+Why this structure is used:
+
+| File or folder | Responsibility |
+| --- | --- |
+| `src/remote/register.ts` | Native Federation exposed module; registers `<product-spotlight-widget>`. |
+| `src/remote/product-spotlight-element.tsx` | Web Component lifecycle, Shadow DOM setup, React root mount/unmount, DOM events to Angular. |
+| `src/features/product-spotlight/product-spotlight.tsx` | React UI and hooks for loading/rendering spotlight products. |
+| `src/features/product-spotlight/api/product-spotlight.api.ts` | Public product API request logic. |
+| `src/features/product-spotlight/product-spotlight.types.ts` | API and UI data contracts. |
+| `src/features/product-spotlight/product-spotlight.utils.ts` | Pure formatting and selection helpers such as best deal, image URL, and money formatting. |
+| `src/features/product-spotlight/product-spotlight.styles.ts` | Shadow-DOM-local CSS string rendered with the React widget. |
+| `src/main.tsx` | Standalone preview bootstrap; imports the registration module so the widget can be viewed outside Angular. |
+
+The old root files `src/register.tsx`, `src/ProductSpotlight.tsx`, `src/api.ts`, and `src/types.ts` are compatibility facades. New code should use the structured `remote/` and `features/product-spotlight/` paths.
 
 The Angular shell loads that module from the wrapper component:
 
@@ -945,15 +1028,752 @@ The wrapper is responsible for Native Federation loading, Web Component registra
 
 #### 7.1.2 React Remote as a Full Angular Route
 
-Use this when the React feature should have its own URL, for example:
+Use this when a React feature should behave like a full page inside the Angular shell and should have its own browser URL, for example:
 
 ```text
-/spotlight
+/price-lens
+/price-lens/search/:query
 /reports
 /recommendations
 ```
 
-Do not try to expose React Router route objects to Angular. Instead, create an Angular route that renders a wrapper component.
+For a full-page React remote, prefer a framework-neutral mount API:
+
+```ts
+mount(element: HTMLElement, options?: MountOptions): { unmount: () => void }
+```
+
+Do not expose React components or React Router route objects directly to Angular. Angular Router cannot render React elements. The host should create an Angular route that renders a small wrapper component, and that wrapper should mount React into a normal DOM element.
+
+Recommended ownership split:
+
+| Concern | Owner |
+| --- | --- |
+| Top-level shell layout | Angular host |
+| Header, footer, auth shell, app navigation | Angular host |
+| Top-level route prefix such as `/price-lens` | Angular host |
+| React feature UI and internal state | React remote |
+| React child routes below the prefix | React remote |
+| API calls for the React feature | React remote or its backend client |
+| Authoritative business logic | Backend |
+| Remote loading fallback | Angular wrapper |
+| Remote unmount cleanup | Angular wrapper |
+
+High-level flow:
+
+```text
+Browser opens /react-feature
+  -> Angular Router matches /react-feature
+    -> Angular wrapper component loads remote ./mount
+      -> remote.mount(outletElement, { routeBasePath: '/react-feature' })
+        -> React createRoot(outletElement)
+          -> React BrowserRouter basename="/react-feature"
+            -> React AppRoutes renders feature pages
+```
+
+##### Create The React Remote App
+
+Create the React app as an independent app. It must run standalone and must also expose a Native Federation module.
+
+Minimum useful packages:
+
+```bash
+npm install react react-dom react-router-dom
+npm install -D vite typescript @vitejs/plugin-react esbuild
+npm install @softarc/native-federation @softarc/native-federation-esbuild
+npm install -D @types/react @types/react-dom
+```
+
+Recommended quality packages:
+
+```bash
+npm install -D eslint typescript-eslint eslint-plugin-react-hooks eslint-plugin-react-refresh
+```
+
+Use `react-router-dom` when the remote has more than one internal view. Keep data fetching simple at first with `fetch`; add TanStack Query only when you need caching, retries, request deduplication, pagination, or background refresh.
+
+Suggested file structure:
+
+```text
+react-feature-app/
+  federation.config.mjs
+  index.html
+  package.json
+  scripts/
+    build.mjs
+  src/
+    App.tsx
+    App.css
+    api.ts
+    config.ts
+    index.css
+    main.tsx
+    mount.tsx
+    routes/
+      AppRoutes.tsx
+    pages/
+      FeatureHomePage.tsx
+      FeatureDetailPage.tsx
+    types.ts
+```
+
+The React remote should be usable in two modes:
+
+```text
+Standalone mode:
+  browser -> http://localhost:4204/
+  src/main.tsx renders the app into #root
+
+Federated mode:
+  Angular shell -> loadRemote(remoteName, './mount')
+  src/mount.tsx renders the app into an Angular-owned DOM element
+```
+
+##### Configure Native Federation In The React Remote
+
+Remote config:
+
+```js
+// react-feature-app/federation.config.mjs
+import { withNativeFederation } from '@softarc/native-federation/config';
+
+export default withNativeFederation({
+  name: 'react_feature_app',
+
+  exposes: {
+    './mount': './src/mount.tsx',
+  },
+
+  shared: {},
+
+  skip: [],
+
+  features: {
+    denseChunking: true,
+  },
+});
+```
+
+For an Angular host and React remote, keep `shared: {}` unless there is another React app intentionally sharing the exact same React runtime. Angular should not share Angular packages with React. React should not depend on Angular services, injectors, route objects, or components.
+
+The exposed module key and host loading key must match exactly:
+
+```text
+Remote name in federation.config.mjs: react_feature_app
+Host manifest key:                    react_feature_app
+Host loadRemote name:                 react_feature_app
+
+Remote exposes key:                   ./mount
+Host loadRemote exposed module:       ./mount
+```
+
+##### Add A Mount API
+
+The mount API is the boundary between Angular and React.
+
+```tsx
+// react-feature-app/src/mount.tsx
+import { StrictMode } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import App from './App';
+import './index.css';
+
+export interface ReactFeatureMountOptions {
+  routeBasePath?: string;
+}
+
+const styleId = 'react-feature-app-styles';
+
+function ensureRemoteStylesheet(): void {
+  if (document.getElementById(styleId)) return;
+
+  const stylesheet = document.createElement('link');
+  stylesheet.id = styleId;
+  stylesheet.rel = 'stylesheet';
+  stylesheet.href = new URL('./mount.css', import.meta.url).toString();
+  document.head.appendChild(stylesheet);
+}
+
+export function mount(element: HTMLElement, options: ReactFeatureMountOptions = {}) {
+  ensureRemoteStylesheet();
+
+  const root: Root = createRoot(element);
+
+  root.render(
+    <StrictMode>
+      <BrowserRouter basename={options.routeBasePath ?? '/react-feature'}>
+        <App />
+      </BrowserRouter>
+    </StrictMode>,
+  );
+
+  return {
+    unmount: () => root.unmount(),
+  };
+}
+```
+
+Always return an `unmount` function. Angular destroys and recreates route components during navigation. If the wrapper does not call `unmount`, React event handlers, timers, and subscriptions can leak.
+
+The stylesheet injection is also important. Native Federation can load `mount.js` without automatically attaching the generated `mount.css`. If that happens, the React app renders in the host as plain HTML. Loading `mount.css` from `import.meta.url` makes the CSS work from localhost and from a deployed remote URL.
+
+##### Add Standalone React Bootstrap
+
+Standalone bootstrap is separate from federated mounting:
+
+```tsx
+// react-feature-app/src/main.tsx
+import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import './index.css';
+import App from './App';
+
+createRoot(document.getElementById('root')!).render(
+  <BrowserRouter>
+    <App />
+  </BrowserRouter>,
+);
+```
+
+Do not put the host route basename in standalone `main.tsx`. The basename belongs in `mount.tsx`, because only the host knows where the remote is mounted.
+
+Common result if this is wrong:
+
+```text
+Opening http://localhost:4204/ shows a blank page because BrowserRouter basename="/react-feature" does not match "/".
+```
+
+##### Add React Routes
+
+Use normal React Router routes inside the remote:
+
+```tsx
+// react-feature-app/src/routes/AppRoutes.tsx
+import { Navigate, Route, Routes } from 'react-router-dom';
+import FeatureHomePage from '../pages/FeatureHomePage';
+import FeatureDetailPage from '../pages/FeatureDetailPage';
+
+export default function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/" element={<FeatureHomePage />} />
+      <Route path="/details/:id" element={<FeatureDetailPage />} />
+      <Route path="/react-feature" element={<FeatureHomePage />} />
+      <Route path="/react-feature/details/:id" element={<FeatureDetailPage />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
+```
+
+Why include both route shapes:
+
+```text
+Embedded in Angular:
+  Browser URL: /react-feature/details/123
+  React basename: /react-feature
+  React route sees: /details/123
+
+Standalone preview:
+  Browser URL: /react-feature/details/123
+  No basename
+  React route sees: /react-feature/details/123
+```
+
+For a production standalone deployment, you can instead configure the web server and app basename consistently. For local MFE development, supporting both shapes prevents blank routes.
+
+##### Build The React Remote
+
+React/Vite does not use the Angular Native Federation builder. Use a small build script that creates:
+
+- `dist/remoteEntry.json`
+- `dist/mount.js`
+- `dist/mount.css`
+- `dist/assets/main.js`
+- `dist/assets/main.css`
+- `dist/index.html`
+
+Recommended `package.json` scripts:
+
+```json
+{
+  "scripts": {
+    "start": "npm run dev",
+    "dev": "npm run build:dev && vite preview --port 4204",
+    "dev:4204": "npm run build:dev && vite preview --port 4204",
+    "build": "node scripts/build.mjs --prod",
+    "build:dev": "node scripts/build.mjs",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  }
+}
+```
+
+The build script should initialize the Native Federation esbuild adapter and use the automatic JSX runtime:
+
+```js
+// react-feature-app/scripts/build.mjs
+import { mkdir, rm, copyFile, writeFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import * as esbuild from 'esbuild';
+import { federationBuilder } from '@softarc/native-federation/build';
+import { createEsBuildAdapter } from '@softarc/native-federation-esbuild';
+import { reactReplacements } from '@softarc/native-federation-esbuild/frameworks/react';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const dist = path.join(root, 'dist');
+const prod = process.argv.includes('--prod');
+const apiBaseUrl = process.env.VITE_REACT_FEATURE_API_BASE_URL ?? 'http://localhost:3000/api/v1';
+const define = {
+  __REACT_FEATURE_API_BASE_URL__: JSON.stringify(apiBaseUrl),
+};
+
+await rm(dist, { recursive: true, force: true });
+await mkdir(path.join(dist, 'assets'), { recursive: true });
+await copyFile(path.join(root, 'public/favicon.svg'), path.join(dist, 'favicon.svg'));
+
+await federationBuilder.init({
+  options: {
+    workspaceRoot: root,
+    outputPath: 'dist',
+    tsConfig: 'tsconfig.app.json',
+    federationConfig: 'federation.config.mjs',
+    verbose: false,
+    dev: !prod,
+  },
+  adapter: createEsBuildAdapter({
+    plugins: [],
+    fileReplacements: prod ? reactReplacements.prod : reactReplacements.dev,
+    define,
+  }),
+});
+
+await esbuild.build({
+  entryPoints: [path.join(root, 'src/main.tsx')],
+  bundle: true,
+  format: 'esm',
+  target: 'es2022',
+  platform: 'browser',
+  tsconfig: path.join(root, 'tsconfig.app.json'),
+  jsx: 'automatic',
+  define,
+  sourcemap: !prod,
+  minify: prod,
+  outdir: path.join(dist, 'assets'),
+  loader: {
+    '.css': 'css',
+    '.svg': 'file',
+    '.png': 'file',
+    '.jpg': 'file',
+    '.jpeg': 'file',
+    '.webp': 'file',
+  },
+});
+
+await writeFile(
+  path.join(dist, 'index.html'),
+  `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>React Feature App</title>
+    <link rel="stylesheet" href="/assets/main.css" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/assets/main.js"></script>
+  </body>
+</html>
+`,
+);
+
+await federationBuilder.build();
+await federationBuilder.close();
+```
+
+The `jsx: 'automatic'` setting prevents this runtime error:
+
+```text
+ReferenceError: React is not defined
+```
+
+That error happens when the build emits classic JSX calls but the generated module does not have a `React` binding in scope.
+
+##### Configure API And Environment Values
+
+Do not read `import.meta.env` directly inside the federated module if the module can be executed outside Vite's normal app runtime. Use a build-time define constant:
+
+```ts
+// react-feature-app/src/config.ts
+declare const __REACT_FEATURE_API_BASE_URL__: string | undefined;
+
+const configuredApiBaseUrl =
+  typeof __REACT_FEATURE_API_BASE_URL__ === 'string' && __REACT_FEATURE_API_BASE_URL__.length > 0
+    ? __REACT_FEATURE_API_BASE_URL__
+    : undefined;
+
+export const REACT_FEATURE_API_BASE_URL = configuredApiBaseUrl ?? 'http://localhost:3000/api/v1';
+```
+
+This avoids:
+
+```text
+Cannot read properties of undefined (reading 'VITE_SOME_VALUE')
+```
+
+The React remote should own feature-specific API calls. The Angular shell can pass route base paths or stable user/session context, but it should not be required to pass every feature configuration value unless that is the explicit host-remote contract.
+
+##### Style The React Remote For An Angular Host
+
+A full-page remote should match the host theme, but keep its CSS scoped:
+
+```css
+/* react-feature-app/src/index.css */
+:root {
+  --react-feature-text: var(--color-text-secondary, #475569);
+  --react-feature-heading: var(--color-text-primary, #10201d);
+  --react-feature-surface: var(--color-surface, #ffffff);
+  --react-feature-border: var(--color-border, #d7e1dc);
+  --react-feature-primary: var(--color-primary, #12473f);
+  --react-feature-primary-hover: var(--color-primary-hover, #0b332e);
+  --react-feature-radius-md: var(--radius-md, 0.5rem);
+  --react-feature-shadow: var(--shadow-sm, 0 8px 24px rgba(15, 23, 42, 0.06));
+}
+
+body {
+  margin: 0;
+}
+```
+
+```css
+/* react-feature-app/src/App.css */
+.react-feature {
+  color: var(--react-feature-text);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+.react-feature * {
+  box-sizing: border-box;
+}
+
+.react-feature .panel {
+  border: 1px solid var(--react-feature-border);
+  border-radius: var(--react-feature-radius-md);
+  background: var(--react-feature-surface);
+  box-shadow: var(--react-feature-shadow);
+}
+```
+
+Avoid these in remote CSS because they can damage the Angular host:
+
+```css
+/* Avoid in remote CSS */
+#root {
+  min-height: 100vh;
+}
+
+body {
+  display: grid;
+  place-items: center;
+}
+
+:root {
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* overriding host tokens here can change the whole shell */
+  }
+}
+```
+
+Remote CSS rules should mostly live under one app class such as `.react-feature` or `.price-lens`. Use host CSS variables as inputs, then map them to remote-specific variables.
+
+##### Add The Remote To The Angular Host Manifest
+
+Add the remote entry URL to the shell manifest:
+
+```json
+// shell-app/public/assets/federation.manifest.json
+{
+  "auth_app": "http://localhost:4201/remoteEntry.json",
+  "admin_app": "http://localhost:4202/remoteEntry.json",
+  "price_lens_product_app": "http://localhost:4204/remoteEntry.json",
+  "react_feature_app": "http://localhost:4205/remoteEntry.json"
+}
+```
+
+Only hosts need a manifest. A pure React remote that does not load other remotes does not need `public/assets/federation.manifest.json`.
+
+##### Add The Angular Wrapper Component
+
+The Angular wrapper should be small. Its job is only to load the remote, mount React, show a fallback if loading fails, and unmount React on destroy.
+
+```ts
+// shell-app/src/app/features/react-feature/react-feature-remote.component.ts
+import { AfterViewInit, Component, ElementRef, OnDestroy, ViewChild } from '@angular/core';
+import { loadRemote } from '../../../federation-loader';
+
+type ReactFeatureRemoteModule = {
+  mount: (
+    element: HTMLElement,
+    options?: { routeBasePath?: string },
+  ) => { unmount: () => void };
+};
+
+@Component({
+  selector: 'app-react-feature-remote',
+  standalone: true,
+  template: `
+    <section class="react-feature-shell">
+      @if (loadError) {
+        <div class="remote-error">
+          <h1>Feature unavailable</h1>
+          <p>The remote application could not be loaded.</p>
+        </div>
+      }
+
+      <div #outlet class="react-feature-shell__outlet"></div>
+    </section>
+  `,
+  styles: [
+    `
+      :host {
+        display: block;
+      }
+
+      .react-feature-shell {
+        min-height: calc(100dvh - 12rem);
+      }
+
+      .react-feature-shell__outlet {
+        min-height: 100%;
+      }
+
+      .remote-error {
+        border: 1px solid var(--color-danger-border, #f5b5ae);
+        border-radius: var(--radius-md, 0.5rem);
+        background: var(--color-danger-surface, #fff8f7);
+        color: var(--color-text-primary, #111827);
+        padding: 1rem;
+      }
+    `,
+  ],
+})
+export class ReactFeatureRemoteComponent implements AfterViewInit, OnDestroy {
+  @ViewChild('outlet', { static: true })
+  private readonly outlet!: ElementRef<HTMLElement>;
+
+  protected loadError = false;
+  private remoteRoot?: { unmount: () => void };
+
+  async ngAfterViewInit(): Promise<void> {
+    try {
+      const remote = await loadRemote<ReactFeatureRemoteModule>('react_feature_app', './mount');
+
+      this.remoteRoot = remote.mount(this.outlet.nativeElement, {
+        routeBasePath: '/react-feature',
+      });
+    } catch (error) {
+      console.error(error);
+      this.loadError = true;
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.remoteRoot?.unmount();
+  }
+}
+```
+
+Use `loadRemote(...)` when the remote is in the startup manifest. Use `loadRemoteFromEntry(...)` when the remote is optional and should be loaded from an environment URL instead of the manifest.
+
+##### Add Angular Routes
+
+The host must declare every top-level URL that should render the wrapper:
+
+```ts
+// shell-app/src/app/app.routes.ts
+{
+  path: 'react-feature',
+  loadComponent: () =>
+    import('./features/react-feature/react-feature-remote.component').then(
+      (m) => m.ReactFeatureRemoteComponent,
+    ),
+},
+{
+  path: 'react-feature/details/:id',
+  loadComponent: () =>
+    import('./features/react-feature/react-feature-remote.component').then(
+      (m) => m.ReactFeatureRemoteComponent,
+    ),
+}
+```
+
+Angular owns these route entries so browser refresh works. React owns the child view that renders after the route is matched.
+
+##### Add Navigation
+
+Use Angular navigation for links that live in the Angular shell:
+
+```html
+<a routerLink="/react-feature" routerLinkActive="active">React Feature</a>
+```
+
+Use React Router navigation for links inside the React remote:
+
+```tsx
+import { Link } from 'react-router-dom';
+
+export function FeatureLink() {
+  return <Link to="/details/123">View detail</Link>;
+}
+```
+
+Do not import Angular Router into React. Do not import React Router into Angular.
+
+##### Communication Between Angular And React
+
+Use the smallest stable contract:
+
+| Need | Recommended contract |
+| --- | --- |
+| Initial route prefix | `mount(element, { routeBasePath })` |
+| Initial primitive values | Mount options or URL params |
+| Complex state | Backend API or a versioned plain TypeScript contract |
+| React tells Angular something happened | `CustomEvent` from the mount element |
+| Angular tells React something changed after mount | Explicit method returned from `mount`, or remount with new options |
+| Authentication | Shared backend token/cookie strategy, not shared Angular services |
+
+Example event:
+
+```tsx
+element.dispatchEvent(
+  new CustomEvent('react-feature-selected', {
+    bubbles: true,
+    composed: true,
+    detail: { id: '123' },
+  }),
+);
+```
+
+Angular can listen on the outlet element and navigate with Angular Router.
+
+##### What To Focus On
+
+Focus on these before adding more features:
+
+- The remote can run standalone.
+- The remote can mount in the Angular host.
+- `remoteEntry.json`, `mount.js`, and `mount.css` are reachable.
+- The route basename is correct in host mode and absent or compatible in standalone mode.
+- The mount API returns cleanup.
+- Styling is scoped and maps to host CSS variables.
+- API configuration is owned by the remote or explicitly passed through a stable mount contract.
+- No Angular-specific code exists inside the React app.
+- No React-specific code leaks into Angular beyond the wrapper.
+- Errors show a user-facing fallback in the Angular wrapper.
+- Production deployment publishes all generated remote files together.
+
+Add libraries only when the feature needs them:
+
+| Need | Suggested library |
+| --- | --- |
+| Internal routing | `react-router-dom` |
+| Server-state caching | `@tanstack/react-query` |
+| Forms | React controlled inputs first; `react-hook-form` for complex forms |
+| Schema validation | `zod` |
+| Tables | Native table first; TanStack Table for sorting, column control, virtualization |
+| Charts | `recharts` or `echarts` |
+| Icons | `lucide-react` |
+| Dates | `date-fns` |
+| Unit tests | `vitest`, `@testing-library/react`, `@testing-library/user-event` |
+| Browser tests | `playwright` |
+
+Do not add Redux, Zustand, query libraries, table libraries, or component kits by default. Federation already adds integration complexity; keep the remote's runtime small until a real feature requirement justifies more dependencies.
+
+##### Development And Verification
+
+Run the backend first if the React remote needs API data:
+
+```bash
+cd backend/ecommerce-api
+npm run start:dev
+```
+
+Run the React remote:
+
+```bash
+cd frontend/native-federation/react-feature-app
+npm run dev:4204
+```
+
+Run the Angular host:
+
+```bash
+cd frontend/native-federation/shell-app
+npm start
+```
+
+Verify these URLs:
+
+```text
+http://localhost:4204/
+http://localhost:4204/remoteEntry.json
+http://localhost:4204/mount.js
+http://localhost:4204/mount.css
+http://localhost:4200/assets/federation.manifest.json
+http://localhost:4200/react-feature
+```
+
+Run checks before committing:
+
+```bash
+cd frontend/native-federation/react-feature-app
+npm run typecheck
+npm run lint
+npm run build:dev
+
+cd ../shell-app
+npx tsc -p tsconfig.app.json --noEmit
+```
+
+##### Production Checklist
+
+Before production:
+
+```text
+1. Build the React remote with production API/environment values.
+2. Deploy remoteEntry.json, mount.js, mount.css, and all referenced assets together.
+3. Configure CDN/server cache headers:
+   remoteEntry.json -> short cache or revalidate
+   mount.js/mount.css/assets -> long cache only if filenames are versioned
+4. Update the host manifest to the deployed remoteEntry.json.
+5. Keep old remote deployments available during host rollout.
+6. Verify direct remote URLs and host route URLs.
+7. Monitor remote load failures and API failures separately.
+```
+
+##### Troubleshooting
+
+| Problem | Usual cause | Fix |
+| --- | --- | --- |
+| Host route is blank | React route basename or Angular route prefix mismatch | Pass `routeBasePath` from Angular and make React routes relative to it |
+| Standalone remote is blank at `/` | Standalone `main.tsx` uses host-only basename | Remove basename from standalone bootstrap |
+| UI renders as plain HTML in host | Remote CSS was not loaded | Inject generated `mount.css` in `mount.tsx` |
+| `React is not defined` | Build emitted classic JSX runtime | Use `jsx: 'automatic'` in esbuild |
+| `Cannot read import.meta.env...` | Federated module evaluated Vite env access outside Vite runtime | Use build-time `define` constants |
+| `remoteEntry.json` 404 | Remote is not running or manifest URL is wrong | Start remote and verify manifest URL |
+| Exposed module missing | `exposes` key and `loadRemote` key do not match | Match `./mount` exactly |
+| Styles break the Angular shell | Remote CSS uses global `body`, `#root`, or broad `:root` overrides | Scope CSS under a remote root class and map host variables |
+| Navigation changes full page unexpectedly | React uses absolute links outside its basename or plain `<a>` for internal routes | Use React Router `Link` inside the remote |
+| Memory leak after navigating away | Angular wrapper does not call React unmount | Call `remoteRoot.unmount()` in `ngOnDestroy` |
 
 Shell route:
 
@@ -1069,7 +1889,331 @@ If the React remote has its own internal views, keep them inside the custom elem
 
 The Angular wrapper can read route params and pass them to the Web Component as attributes or properties. React can update its internal UI, but Angular remains the owner of browser URL navigation.
 
-#### 7.1.3 Can Angular Load React Routes Directly?
+#### 7.1.3 Price Lens React Remote Setup
+
+`price-lens-product-app` is the repository's route-level React remote that is embedded in the Angular shell through a mount API.
+
+Use this pattern when the React feature is a full application area with its own internal React Router pages, but the Angular shell still owns the top-level URL and navigation.
+
+Current Price Lens flow:
+
+```text
+Browser URL
+  /price-lens
+  /price-lens/search/:query
+
+Angular shell
+  -> shell-app/src/app/app.routes.ts
+    -> PriceLensRemoteComponent
+      -> loadRemote('price_lens_product_app', './mount')
+        -> price-lens-product-app/src/mount.tsx
+          -> React createRoot(outlet)
+          -> BrowserRouter basename="/price-lens"
+          -> AppRoutes
+```
+
+Remote federation config:
+
+```js
+// price-lens-product-app/federation.config.mjs
+import { withNativeFederation } from '@softarc/native-federation/config';
+
+export default withNativeFederation({
+  name: 'price_lens_product_app',
+
+  exposes: {
+    './mount': './src/mount.tsx',
+  },
+
+  shared: {},
+
+  skip: [],
+
+  features: {
+    denseChunking: true,
+  },
+});
+```
+
+The exposed module must export a stable mount contract:
+
+```tsx
+// price-lens-product-app/src/mount.tsx
+import { StrictMode } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import App from './App';
+import './index.css';
+
+export interface PriceLensMountOptions {
+  routeBasePath?: string;
+}
+
+const styleId = 'price-lens-product-app-styles';
+
+function ensureRemoteStylesheet(): void {
+  if (document.getElementById(styleId)) return;
+
+  const stylesheet = document.createElement('link');
+  stylesheet.id = styleId;
+  stylesheet.rel = 'stylesheet';
+  stylesheet.href = new URL('./mount.css', import.meta.url).toString();
+  document.head.appendChild(stylesheet);
+}
+
+export function mount(element: HTMLElement, options: PriceLensMountOptions = {}) {
+  ensureRemoteStylesheet();
+
+  const root: Root = createRoot(element);
+
+  root.render(
+    <StrictMode>
+      <BrowserRouter basename={options.routeBasePath ?? '/price-lens'}>
+        <App />
+      </BrowserRouter>
+    </StrictMode>,
+  );
+
+  return {
+    unmount: () => root.unmount(),
+  };
+}
+```
+
+The CSS loader is important. The Native Federation JavaScript module can render in the host even when its generated CSS is not automatically attached. If `mount.css` is missing from the host page, the UI looks like plain HTML: unstyled buttons, collapsed spacing, no cards, and raw table layout. Loading `mount.css` from `import.meta.url` keeps the CSS tied to the deployed remote location.
+
+The Angular host wrapper owns loading and cleanup:
+
+```ts
+// shell-app/src/app/features/price-lens/price-lens-remote.component.ts
+import { AfterViewInit, Component, ElementRef, OnDestroy, ViewChild } from '@angular/core';
+import { loadRemote } from '../../../federation-loader';
+
+type PriceLensRemoteModule = {
+  mount: (
+    element: HTMLElement,
+    options?: { routeBasePath?: string },
+  ) => { unmount: () => void };
+};
+
+@Component({
+  selector: 'app-price-lens-remote',
+  standalone: true,
+  template: `
+    <section class="price-lens-shell">
+      <div #outlet class="price-lens-shell__outlet"></div>
+    </section>
+  `,
+})
+export class PriceLensRemoteComponent implements AfterViewInit, OnDestroy {
+  @ViewChild('outlet', { static: true })
+  private readonly outlet!: ElementRef<HTMLElement>;
+
+  private remoteRoot?: { unmount: () => void };
+
+  async ngAfterViewInit(): Promise<void> {
+    const remote = await loadRemote<PriceLensRemoteModule>('price_lens_product_app', './mount');
+
+    this.remoteRoot = remote.mount(this.outlet.nativeElement, {
+      routeBasePath: '/price-lens',
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.remoteRoot?.unmount();
+  }
+}
+```
+
+The shell routes mount the same Angular wrapper for the base page and the search page:
+
+```ts
+// shell-app/src/app/app.routes.ts
+{
+  path: 'price-lens',
+  loadComponent: () =>
+    import('./features/price-lens/price-lens-remote.component').then(
+      (m) => m.PriceLensRemoteComponent,
+    ),
+},
+{
+  path: 'price-lens/search/:query',
+  loadComponent: () =>
+    import('./features/price-lens/price-lens-remote.component').then(
+      (m) => m.PriceLensRemoteComponent,
+    ),
+}
+```
+
+Inside the React remote, use React Router normally:
+
+```tsx
+// price-lens-product-app/src/routes/AppRoutes.tsx
+import { Navigate, Route, Routes } from 'react-router-dom';
+import PriceLensPage from '../pages/PriceLensPage';
+
+export default function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="/" element={<PriceLensPage />} />
+      <Route path="/search/:query" element={<PriceLensPage />} />
+      <Route path="/price-lens" element={<PriceLensPage />} />
+      <Route path="/price-lens/search/:query" element={<PriceLensPage />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  );
+}
+```
+
+The duplicate `/price-lens` route entries are for standalone preview compatibility. In the host, React sees routes relative to the basename `/price-lens`. Standalone mode has no basename so direct links such as `http://localhost:4204/price-lens/search/iphone%2015` still work.
+
+Standalone React bootstrap must not force the `/price-lens` basename:
+
+```tsx
+// price-lens-product-app/src/main.tsx
+import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import './index.css';
+import App from './App';
+
+createRoot(document.getElementById('root')!).render(
+  <BrowserRouter>
+    <App />
+  </BrowserRouter>,
+);
+```
+
+If standalone `main.tsx` uses `basename="/price-lens"`, opening `http://localhost:4204/` can render a blank page because the current URL does not match the router basename.
+
+Price Lens owns its API configuration. The shell should not pass `apiBaseUrl` or `productId` for this feature:
+
+```ts
+// price-lens-product-app/src/config.ts
+declare const __PRICE_LENS_API_BASE_URL__: string | undefined;
+
+const configuredApiBaseUrl =
+  typeof __PRICE_LENS_API_BASE_URL__ === 'string' && __PRICE_LENS_API_BASE_URL__.length > 0
+    ? __PRICE_LENS_API_BASE_URL__
+    : undefined;
+
+export const PRICE_LENS_API_BASE_URL = configuredApiBaseUrl ?? 'http://localhost:3000/api/v1';
+```
+
+The API client searches by product name:
+
+```ts
+// price-lens-product-app/src/api.ts
+export async function searchProductComparison(apiBaseUrl: string, query: string) {
+  const baseUrl = apiBaseUrl.replace(/\/$/, '');
+  const params = new URLSearchParams({ query });
+  const response = await fetch(`${baseUrl}/product-comparison/search/items?${params.toString()}`, {
+    headers: { Accept: 'application/json' },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Product search API returned ${response.status}`);
+  }
+
+  const body = await response.json();
+  return body.data;
+}
+```
+
+The backend route is:
+
+```text
+GET http://localhost:3000/api/v1/product-comparison/search/items?query=<product-name>
+```
+
+The backend returns source-local prices plus normalized `USD` and `NPR` values. Direct live scraping of Amazon, Flipkart, Daraz, and similar marketplaces should be implemented behind backend adapters using official APIs, affiliate APIs, feeds, or a scraping provider. Do not scrape from the browser remote and do not put retailer credentials in frontend code.
+
+Build setup for this React remote is intentionally different from Angular remotes. The app uses `scripts/build.mjs` to run Native Federation's esbuild adapter and also create a standalone Vite preview bundle:
+
+```js
+// price-lens-product-app/scripts/build.mjs
+await federationBuilder.init({
+  options: {
+    workspaceRoot: root,
+    outputPath: 'dist',
+    tsConfig: 'tsconfig.app.json',
+    federationConfig: 'federation.config.mjs',
+    verbose: false,
+    dev: !prod,
+  },
+  adapter: createEsBuildAdapter({
+    plugins: [],
+    fileReplacements: prod ? reactReplacements.prod : reactReplacements.dev,
+    define,
+  }),
+});
+```
+
+Use automatic JSX transform in the build. Without it, the generated remote can throw `ReferenceError: React is not defined` when Angular loads the federated module:
+
+```js
+await esbuild.build({
+  entryPoints: [path.join(root, 'src/main.tsx')],
+  bundle: true,
+  format: 'esm',
+  target: 'es2022',
+  platform: 'browser',
+  tsconfig: path.join(root, 'tsconfig.app.json'),
+  jsx: 'automatic',
+  define,
+  outdir: path.join(dist, 'assets'),
+});
+```
+
+Development commands:
+
+```bash
+cd frontend/native-federation/price-lens-product-app
+npm install
+npm run dev:4204
+```
+
+Expected local URLs:
+
+```text
+http://localhost:4204/
+http://localhost:4204/price-lens
+http://localhost:4204/price-lens/search/iphone%2015
+http://localhost:4204/remoteEntry.json
+```
+
+Host manifest entry:
+
+```json
+{
+  "price_lens_product_app": "http://localhost:4204/remoteEntry.json"
+}
+```
+
+Production deployment checklist for the React mount remote:
+
+```text
+1. Build with npm run build.
+2. Deploy dist/remoteEntry.json.
+3. Deploy dist/mount.js and dist/mount.css together.
+4. Deploy dist/assets/* for standalone preview if needed.
+5. Set VITE_PRICE_LENS_API_BASE_URL at build time for the target backend.
+6. Update the shell manifest to the deployed remoteEntry.json URL.
+7. Keep mount(element, options) backward-compatible.
+8. Verify /price-lens and /price-lens/search/:query in the shell.
+```
+
+Common Price Lens remote failures:
+
+| Problem | Usual cause | Fix |
+| --- | --- | --- |
+| Blank standalone page at `/` | Standalone React router uses `basename="/price-lens"` | Use no basename in `src/main.tsx`; only pass basename from `mount.tsx` when embedded |
+| UI renders like plain HTML in shell | `mount.css` was not loaded into the host document | Inject `mount.css` from `src/mount.tsx` using `new URL('./mount.css', import.meta.url)` |
+| `React is not defined` | Build emitted classic JSX runtime but React was not in scope | Configure esbuild with `jsx: 'automatic'` |
+| `Cannot read properties of undefined (reading 'VITE_PRICE_LENS_API_BASE_URL')` | Federated build evaluated `import.meta.env` where Vite env is unavailable | Use build-time `define` constant such as `__PRICE_LENS_API_BASE_URL__` |
+| API returns 404 for `search/items` | Backend process is still running old compiled code or route order conflicts with `:productId` | Restart backend and keep search route before `:productId` |
+| Currency comparison is wrong | Local marketplace currencies were sorted directly | Normalize every offer to USD/NPR before ranking |
+
+#### 7.1.4 Can Angular Load React Routes Directly?
 
 Short answer: not directly as Angular routes.
 
@@ -1302,11 +2446,12 @@ Current Price Lens implementation in this repository uses this route-level React
 
 ```text
 shell-app /price-lens
-shell-app /price-lens/:productId
+shell-app /price-lens/search/:query
   -> PriceLensRemoteComponent
     -> loadRemote('price_lens_product_app', './mount')
       -> price-lens-product-app/src/mount.tsx
-        -> React Price Lens comparison UI
+        -> BrowserRouter basename="/price-lens"
+        -> React Price Lens search and comparison UI
 ```
 
 Shell manifest entry:
@@ -1321,7 +2466,14 @@ Shell route:
 
 ```ts
 {
-  path: 'price-lens/:productId',
+  path: 'price-lens',
+  loadComponent: () =>
+    import('./features/price-lens/price-lens-remote.component').then(
+      (m) => m.PriceLensRemoteComponent,
+    ),
+},
+{
+  path: 'price-lens/search/:query',
   loadComponent: () =>
     import('./features/price-lens/price-lens-remote.component').then(
       (m) => m.PriceLensRemoteComponent,
@@ -1329,10 +2481,10 @@ Shell route:
 }
 ```
 
-The shell header links to `/price-lens`, and product detail pages link to `/price-lens/:productId` so the React remote can immediately call:
+The shell header links to `/price-lens`, and product detail pages link to `/price-lens/search/:query` so the React remote can immediately call:
 
 ```text
-GET /api/v1/product-comparison/:productId
+GET /api/v1/product-comparison/search/items?query=<product-name>
 ```
 
 Use this pattern when:
@@ -1500,6 +2652,1019 @@ Use cases:
 
 - React-based visualization inside Vue.
 - Feature migration from React to Vue or Vue to React.
+
+### 7.7 Next.js and Django With an Angular Host
+
+Short answer:
+
+```text
+Next.js can be shown inside an Angular host, but it is usually not a Native Federation remote.
+Django can be shown inside an Angular host, but it is not a JavaScript Native Federation remote.
+```
+
+Native Federation loads browser JavaScript modules such as Angular routes, React mount functions, or Web Component registration modules. Next.js and Django are full server/application frameworks. They can participate in a micro frontend architecture, but the integration boundary is different.
+
+Use this decision table:
+
+| App type | Can Angular render it with Native Federation? | Recommended integration |
+| --- | --- | --- |
+| Plain React/Vite app | Yes | Expose `./mount` or `./register` through Native Federation |
+| Next.js app using SSR, App Router, API routes, middleware, image optimizer | Not directly | Deploy separately and embed route/page through iframe, or extract a browser-only React widget |
+| Next.js static export with browser-only React widget | Sometimes | Prefer extracting the widget into a Vite React remote with `./mount` |
+| Django API app | No UI to render | Angular calls Django REST/GraphQL APIs |
+| Django server-rendered pages/templates | Not as Native Federation | Embed through iframe or link out to the Django app |
+| Django admin | Not as Native Federation | Open as separate app or iframe with strict auth and frame headers |
+
+The clean architecture is:
+
+```text
+Angular shell
+  -> Native Federation remotes for Angular/React/Vue browser modules
+  -> iframe for independently served Next.js/Django pages
+  -> HTTP APIs for Django or Next.js backend endpoints
+```
+
+#### Next.js As a Remote Page
+
+Use this when the Next.js app needs its own SSR, routing, image optimization, middleware, or API routes.
+
+Recommended setup:
+
+```text
+next-dashboard/
+  runs on http://localhost:4300
+  owns /dashboard, /dashboard/reports, /dashboard/settings
+
+shell-app/
+  runs on http://localhost:4200
+  owns /next-dashboard
+  renders Angular wrapper with iframe src="http://localhost:4300/dashboard"
+```
+
+Angular route:
+
+```ts
+// shell-app/src/app/app.routes.ts
+{
+  path: 'next-dashboard',
+  loadComponent: () =>
+    import('./features/next-dashboard/next-dashboard-remote.component').then(
+      (m) => m.NextDashboardRemoteComponent,
+    ),
+}
+```
+
+Angular iframe wrapper:
+
+```ts
+// shell-app/src/app/features/next-dashboard/next-dashboard-remote.component.ts
+import { Component } from '@angular/core';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+
+@Component({
+  selector: 'app-next-dashboard-remote',
+  standalone: true,
+  template: `
+    <section class="external-remote">
+      <iframe
+        title="Next.js dashboard"
+        [src]="remoteUrl"
+        loading="lazy"
+        referrerpolicy="strict-origin-when-cross-origin"
+      ></iframe>
+    </section>
+  `,
+  styles: [
+    `
+      :host {
+        display: block;
+      }
+
+      .external-remote {
+        min-height: calc(100dvh - 8rem);
+      }
+
+      iframe {
+        display: block;
+        width: 100%;
+        min-height: calc(100dvh - 8rem);
+        border: 0;
+        background: var(--color-surface, #fff);
+      }
+    `,
+  ],
+})
+export class NextDashboardRemoteComponent {
+  protected readonly remoteUrl: SafeResourceUrl;
+
+  constructor(sanitizer: DomSanitizer) {
+    this.remoteUrl = sanitizer.bypassSecurityTrustResourceUrl('http://localhost:4300/dashboard');
+  }
+}
+```
+
+Next.js must allow framing by the Angular host. Configure response headers in Next.js:
+
+```js
+// next.config.js
+const nextConfig = {
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: "frame-ancestors 'self' http://localhost:4200",
+          },
+        ],
+      },
+    ];
+  },
+};
+
+module.exports = nextConfig;
+```
+
+Do not set `X-Frame-Options: DENY` or `X-Frame-Options: SAMEORIGIN` if the Angular host is on a different origin. Prefer CSP `frame-ancestors` because it can list explicit trusted host origins.
+
+Use `postMessage` for communication between Angular and the framed Next.js app:
+
+```ts
+// Angular -> iframe
+iframe.contentWindow?.postMessage(
+  { type: 'shell:navigation-context', payload: { userId: '123' } },
+  'http://localhost:4300',
+);
+```
+
+```ts
+// Next.js browser component
+window.parent.postMessage(
+  { type: 'next-dashboard:selected', payload: { reportId: 'sales' } },
+  'http://localhost:4200',
+);
+```
+
+Validate every `message` event origin on both sides:
+
+```ts
+window.addEventListener('message', (event) => {
+  if (event.origin !== 'http://localhost:4300') return;
+  // handle trusted message
+});
+```
+
+#### Authentication and Authorization For Iframe Remotes
+
+Authentication for iframe remotes must be handled as authentication between two separate web applications. The Angular shell can decide whether the iframe route is visible, but the framed Next.js or Django app must still authenticate and authorize every page and API request on its own server.
+
+Do not use these patterns:
+
+```text
+Do not pass access tokens in iframe URLs.
+Do not put JWTs in query strings.
+Do not trust userId, role, or permissions received from postMessage.
+Do not rely only on Angular route guards to protect the iframe app.
+Do not disable CSRF or frame protections globally just to make the iframe load.
+```
+
+Recommended options:
+
+| Pattern | When to use | How it works |
+| --- | --- | --- |
+| Same-site SSO cookie | Best option when apps share a parent domain | User logs in once; shell and iframe app read their own server session from shared identity cookies |
+| OIDC/OAuth login inside iframe app | Apps are on separate domains or independently owned | Iframe app redirects to identity provider if it has no session |
+| Backend-for-frontend session | Shell and iframe use the same auth backend | Each app gets a server-side session cookie; APIs validate server sessions |
+| Token exchange endpoint | Shell has a token and iframe needs its own session | Shell calls backend to create a short-lived, one-time exchange code; iframe redeems it server-side |
+| API-only Django | No iframe UI is needed | Angular calls Django APIs with normal auth headers/cookies |
+
+The safest architecture:
+
+```text
+Identity Provider / Auth API
+  -> issues secure session/token
+
+Angular shell
+  -> protects /next-dashboard route with Angular guard
+  -> renders iframe only for signed-in users
+
+Next.js or Django iframe app
+  -> checks its own session on every request
+  -> checks roles/permissions on the server
+  -> redirects to login or returns 403 when unauthorized
+```
+
+Angular route guard example:
+
+```ts
+// shell-app/src/app/core/auth/auth.guard.ts
+import { CanMatchFn, Router } from '@angular/router';
+import { inject } from '@angular/core';
+import { AuthFacade } from './auth.facade';
+
+export const signedInGuard: CanMatchFn = () => {
+  const auth = inject(AuthFacade);
+  const router = inject(Router);
+
+  if (auth.isAuthenticated()) {
+    return true;
+  }
+
+  return router.createUrlTree(['/auth/login']);
+};
+```
+
+Host route:
+
+```ts
+{
+  path: 'next-dashboard',
+  canMatch: [signedInGuard],
+  loadComponent: () =>
+    import('./features/next-dashboard/next-dashboard-remote.component').then(
+      (m) => m.NextDashboardRemoteComponent,
+    ),
+}
+```
+
+This improves UX by preventing anonymous users from seeing an embedded login failure, but it is not enough for security. The iframe app must still validate the user.
+
+##### Same-Site Cookie Setup
+
+Use this when the shell and iframe app can live under the same parent site:
+
+```text
+https://app.example.com          Angular shell
+https://next.example.com         Next.js app
+https://django.example.com       Django app
+https://auth.example.com         Identity/auth service
+```
+
+Cookie guidance:
+
+```text
+Use HttpOnly session cookies where possible.
+Use Secure in production.
+Use SameSite=Lax for same-site top-level navigation.
+Use SameSite=None; Secure only when the iframe is truly cross-site and must receive cookies.
+Prefer subdomains under the same registrable domain to reduce third-party-cookie problems.
+```
+
+Do not store long-lived access tokens in `localStorage` just to share them with iframe apps. The iframe is a separate browsing context and should get its own server-validated session.
+
+##### Token Exchange For Iframe Session Bootstrap
+
+Use this only when the shell is already authenticated and the iframe app needs to create its own session without asking the user to log in again.
+
+Recommended flow:
+
+```text
+1. User logs into Angular shell.
+2. Angular shell calls Auth API: POST /iframe-session/exchange-code.
+3. Auth API validates the shell session and returns a one-time code.
+4. Angular sets iframe src to https://next.example.com/embed?code=<one-time-code>.
+5. Next.js/Django server redeems the code with Auth API.
+6. Iframe app sets its own HttpOnly session cookie.
+7. Iframe redirects to the real embedded page without the code in the URL.
+```
+
+The exchange code must be:
+
+```text
+Short lived, usually 30-60 seconds.
+Single use.
+Bound to the target iframe app.
+Bound to the authenticated user.
+Redeemed server-to-server, not trusted in browser JavaScript.
+Removed from browser history after redemption.
+```
+
+Angular wrapper example:
+
+```ts
+// shell-app/src/app/features/next-dashboard/next-dashboard-remote.component.ts
+import { Component, inject } from '@angular/core';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { HttpClient } from '@angular/common/http';
+import { firstValueFrom } from 'rxjs';
+
+@Component({
+  selector: 'app-next-dashboard-remote',
+  standalone: true,
+  template: `
+    @if (remoteUrl) {
+      <iframe title="Next.js dashboard" [src]="remoteUrl"></iframe>
+    } @else {
+      <p>Preparing dashboard session...</p>
+    }
+  `,
+})
+export class NextDashboardRemoteComponent {
+  protected remoteUrl?: SafeResourceUrl;
+
+  private readonly http = inject(HttpClient);
+  private readonly sanitizer = inject(DomSanitizer);
+
+  async ngOnInit(): Promise<void> {
+    const response = await firstValueFrom(
+      this.http.post<{ code: string }>('/api/iframe-session/exchange-code', {
+        audience: 'next-dashboard',
+      }),
+    );
+
+    const url = `https://next.example.com/embed/session?code=${encodeURIComponent(response.code)}`;
+    this.remoteUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
+  }
+}
+```
+
+Next.js redemption route concept:
+
+```ts
+// next-dashboard/app/embed/session/route.ts
+import { NextRequest, NextResponse } from 'next/server';
+
+export async function GET(request: NextRequest) {
+  const code = request.nextUrl.searchParams.get('code');
+  if (!code) return NextResponse.redirect(new URL('/login', request.url));
+
+  const session = await redeemIframeCode(code, 'next-dashboard');
+  if (!session) return NextResponse.redirect(new URL('/login', request.url));
+
+  const response = NextResponse.redirect(new URL('/dashboard', request.url));
+  response.cookies.set('next_dashboard_session', session.id, {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'none',
+    path: '/',
+  });
+  return response;
+}
+```
+
+Django redemption view concept:
+
+```py
+# django_app/views.py
+from django.shortcuts import redirect
+
+def iframe_session(request):
+    code = request.GET.get("code")
+    session = redeem_iframe_code(code, audience="django-admin")
+
+    if not session:
+        return redirect("/login/")
+
+    response = redirect("/admin/")
+    response.set_cookie(
+        "django_iframe_session",
+        session.id,
+        httponly=True,
+        secure=True,
+        samesite="None",
+        path="/",
+    )
+    return response
+```
+
+##### Authorization In The Iframe App
+
+Authorization must be enforced server-side by the iframe application.
+
+Next.js examples:
+
+```ts
+// next-dashboard/middleware.ts
+import { NextRequest, NextResponse } from 'next/server';
+
+export function middleware(request: NextRequest) {
+  const session = request.cookies.get('next_dashboard_session');
+
+  if (!session) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: ['/dashboard/:path*'],
+};
+```
+
+```ts
+// next-dashboard/app/dashboard/page.tsx
+import { forbidden, redirect } from 'next/navigation';
+
+export default async function DashboardPage() {
+  const user = await getCurrentUser();
+  if (!user) redirect('/login');
+  if (!user.permissions.includes('dashboard:read')) forbidden();
+
+  return <main>Dashboard</main>;
+}
+```
+
+Django examples:
+
+```py
+# django_app/views.py
+from django.contrib.auth.decorators import login_required, permission_required
+
+@login_required
+@permission_required("reports.view_report", raise_exception=True)
+def reports_dashboard(request):
+    ...
+```
+
+```py
+# django_app/settings.py
+LOGIN_URL = "/login/"
+CSRF_TRUSTED_ORIGINS = ["https://app.example.com"]
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+```
+
+When Django is embedded cross-site and must use cookies inside the iframe, set cookie `SameSite=None; Secure` deliberately:
+
+```py
+SESSION_COOKIE_SAMESITE = "None"
+CSRF_COOKIE_SAMESITE = "None"
+```
+
+Use this only for trusted framed deployments. Cross-site iframe cookies are increasingly restricted by browsers, so same-site subdomains or an explicit SSO redirect flow are more reliable.
+
+##### `postMessage` Is Not Authentication
+
+Use `postMessage` only for UI coordination:
+
+```text
+Good:
+  iframe tells shell "height changed"
+  iframe tells shell "navigate to product 123"
+  shell tells iframe "theme changed"
+
+Bad:
+  shell tells iframe "user is admin"
+  shell sends access token to iframe
+  iframe trusts userId from shell without server validation
+```
+
+If `postMessage` is used, validate:
+
+```text
+event.origin
+event.source
+message type
+payload schema
+expected audience
+```
+
+The server still decides who the user is and what the user can do.
+
+Focus points for Next.js iframe remotes:
+
+- Authentication must work across origins, usually with SSO or same-site cookies.
+- The Next.js app needs frame permissions through CSP.
+- Styling is isolated by the iframe, so host CSS variables do not automatically apply.
+- Deep links are owned by Next.js inside the iframe unless you synchronize URL state with Angular.
+- Browser back/forward behavior must be designed intentionally.
+- SEO for the framed content belongs to the Next.js deployment, not the Angular shell route.
+
+#### Next.js As a Native Federation Remote
+
+Use this only when you extract a browser-only React surface from Next.js.
+
+Recommended approach:
+
+```text
+Do not federate the full Next.js app.
+Extract the reusable UI into one of these:
+  1. A Vite React remote that exposes ./mount.
+  2. A plain React package consumed by a Vite React remote.
+  3. A Web Component registration module.
+```
+
+A full Next.js app has server-only concepts that do not map cleanly to a browser ESM remote:
+
+- Server Components.
+- App Router server rendering.
+- Route handlers.
+- Middleware.
+- Next.js image optimizer.
+- Server actions.
+- File-system routing.
+- Next.js-specific runtime chunks and manifests.
+
+Native Federation should expose browser modules, not a whole Next.js server application. If the feature is mostly client-side React, create a React/Vite remote and keep Next.js for pages that genuinely need Next.js.
+
+#### Product Manager: Next.js App Plus Native Federation Remote
+
+`frontend/native-federation/product-manager` is a dual-build app:
+
+```text
+Standalone mode:
+  Next.js App Router serves /admin/products and related pages.
+
+Remote mode:
+  Vite + Native Federation builds remoteEntry.json and exposes ./register.
+  Angular loads ./register and renders <product-manager-mfe>.
+```
+
+The important decision is that the Next.js App Router is not exposed to Angular. The browser-only product UI is adapted into a React Web Component remote, while the original Next pages remain available for standalone development and deployment.
+
+Actual local ports in this repository:
+
+```text
+shell-app:                http://localhost:4200
+auth-app:                 http://localhost:4201/remoteEntry.json
+admin-app:                http://localhost:4202/remoteEntry.json
+price-lens-product-app:   http://localhost:4204/remoteEntry.json
+product-manager remote:   http://localhost:4205/remoteEntry.json
+```
+
+##### Product Manager Commands
+
+`product-manager/package.json` intentionally separates Next mode from remote mode:
+
+```json
+{
+  "scripts": {
+    "dev": "npm run remote",
+    "next:dev": "next dev --port 4205",
+    "build": "next build",
+    "remote": "npm run remote:build:dev && npm run remote:preview",
+    "remote:build": "node scripts/build.mjs --prod",
+    "remote:build:dev": "node scripts/build.mjs",
+    "remote:preview": "vite preview --host 0.0.0.0 --port 4205 --strictPort",
+    "remote:typecheck": "tsc -p tsconfig.remote.json --noEmit"
+  }
+}
+```
+
+Why this shape is needed:
+
+| Script | Purpose |
+| --- | --- |
+| `npm run dev` | Starts the federation remote expected by Angular. It must serve `/remoteEntry.json`. |
+| `npm run next:dev` | Starts standalone Next.js development. This does not serve `/remoteEntry.json`. |
+| `npm run build` | Verifies the standalone Next.js app still builds. |
+| `npm run remote:build:dev` | Builds Native Federation metadata and browser ESM bundles for local remote preview. |
+| `npm run remote:build` | Builds production-style remote output. |
+| `npm run remote:preview` | Serves the generated remote output on `4205`; `--strictPort` prevents accidentally serving on a different port than the host manifest expects. |
+| `npm run remote:typecheck` | Type-checks only the remote-compatible browser source. |
+
+If `next dev --port 4205` is running, Angular will fail with `remoteEntry.json` 404 because Next.js is serving the standalone app, not Native Federation assets.
+
+##### Product Manager Federation Config
+
+`product-manager/federation.config.mjs`:
+
+```js
+import { withNativeFederation } from '@softarc/native-federation/config';
+
+export default withNativeFederation({
+  name: 'productManager',
+  exposes: {
+    './register': './src/remote/register.ts',
+  },
+  shared: {},
+});
+```
+
+Why each part exists:
+
+| Setting | Reason |
+| --- | --- |
+| `name: 'productManager'` | This is the runtime contract used by `federation.manifest.json` and `loadRemote('productManager', './register')`. It is case-sensitive. |
+| `exposes['./register']` | Angular only needs to execute the registration module. It should not import a React component or a Next page directly. |
+| `shared: {}` | The Angular host does not use React. The remote owns React, ReactDOM, and React Router to avoid cross-framework runtime coupling. |
+
+##### Product Manager Build Script
+
+`product-manager/scripts/build.mjs` is needed because this is not an Angular CLI remote and not a normal Vite-only app. It drives Native Federation directly:
+
+```text
+1. Remove and recreate dist.
+2. Initialize federationBuilder with:
+   - workspaceRoot: product-manager
+   - outputPath: dist
+   - tsConfig: tsconfig.remote.json
+   - federationConfig: federation.config.mjs
+3. Bundle src/main.tsx with esbuild.
+4. Write a standalone preview index.html.
+5. Build federation metadata and exposed modules.
+```
+
+The generated output includes:
+
+```text
+dist/
+  remoteEntry.json
+  register.js
+  register.css
+  assets/main.js
+  assets/main.css
+  importmap.json
+```
+
+Deploy or serve the whole `dist` folder. Do not deploy only `remoteEntry.json`; it references other generated JS and CSS files.
+
+##### Remote TypeScript Config
+
+`product-manager/tsconfig.remote.json` extends the Next config but scopes typechecking to remote-compatible browser code:
+
+```json
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["vite/client", "node"],
+    "incremental": false
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["node_modules", ".next", "src/app"]
+}
+```
+
+Why it is needed:
+
+- `src/app` contains Next.js App Router pages and Next-specific routing APIs.
+- The remote entry uses Vite `import.meta.env`, so it needs `vite/client` types.
+- Shared config code still references `process.env.NEXT_PUBLIC_*` for standalone Next mode, so the remote typecheck includes Node typings.
+- Excluding `.next` avoids stale generated Next validator files from failing the remote check.
+
+`src/vite-env.d.ts` declares the `VITE_*` keys used by the remote preview bootstrap so both Next and remote typechecking understand the file.
+
+##### Remote Source Files And Why They Exist
+
+| File | Why it is needed |
+| --- | --- |
+| `src/main.tsx` | Local remote preview bootstrap. It merges Vite runtime defaults and renders `<ProductManagerRemote />` into `dist/index.html`. |
+| `src/remote/register.ts` | The only exposed module. It imports remote CSS, injects generated `register.css` into the host document, and registers the custom element. |
+| `src/remote/product-manager-element.tsx` | Defines the browser-native `<product-manager-mfe>` boundary. It creates and destroys the React root and observes `initial-path` changes from Angular. |
+| `src/remote/product-manager-app.tsx` | React remote application shell. It uses `MemoryRouter` so Angular keeps ownership of the browser URL. |
+| `src/remote/pages/product-list-remote.tsx` | Product list adapter for remote mode. It uses React Router navigation instead of Next navigation. |
+| `src/remote/pages/product-create-remote.tsx` | Product create adapter for remote mode. |
+| `src/remote/pages/product-edit-remote.tsx` | Product edit adapter for remote mode. |
+| `src/remote/remote.css` | Remote UI stylesheet scoped under `.product-manager-root` so it styles the embedded product manager without leaking into the Angular shell. |
+| `src/lib/config/product-manager-config.ts` | Runtime config bridge. Angular passes API/auth settings through element attributes; standalone Next falls back to `NEXT_PUBLIC_*`. |
+| `src/lib/auth/token-storage.ts` | Reads and writes the same token keys as the Angular admin app: `access_token` and `refresh_token`. |
+| `src/lib/auth/api-client.ts` | Axios client. It reads runtime config and localStorage at request time so host-provided settings and refreshed tokens are respected. |
+| `src/lib/auth/auth-boundary.tsx` | Blocks product UI until a shared session is available and redirects to the host login route when configured. |
+| `src/features/products/*` | Shared product business UI and API code used by both standalone Next screens and remote screens. |
+
+##### Runtime Configuration Contract
+
+Angular creates:
+
+```html
+<product-manager-mfe
+  initial-path="/products"
+  api-base-url="http://localhost:3000"
+  refresh-endpoint="/api/v1/auth/refresh"
+  refresh-token-field="refreshToken"
+  login-url="/auth/login"
+  redirect-on-missing-auth="true">
+</product-manager-mfe>
+```
+
+The element calls `mergeProductManagerConfig(...)`, which writes:
+
+```ts
+window.__PRODUCT_MANAGER_CONFIG__
+```
+
+The Axios client calls `getProductManagerConfig()` at request time. This is required because a remote should not need a rebuild just because the host environment changes from local to staging or production.
+
+##### Authentication Contract
+
+The current Angular admin app stores:
+
+```text
+localStorage['access_token']
+localStorage['refresh_token']
+```
+
+The product-manager remote reads those same keys. The JavaScript bundle is downloaded from `localhost:4205`, but it executes inside the Angular page. Therefore, when the shell is opened at `http://localhost:4200`, `window.localStorage` means the shell page origin's storage.
+
+Do not use old token names such as `accesstokey` or `refreshtoken` for this repository unless the Angular auth service is changed to use those keys too.
+
+##### Angular Admin Wrapper
+
+`admin-app/src/app/features/products/product-manager-remote/product-manager-remote.component.ts` is the host-side adapter. It:
+
+```text
+1. Loads productManager:./register.
+2. Reads PRODUCT_MANAGER_ELEMENT from the exposed module.
+3. Creates <product-manager-mfe>.
+4. Passes API/auth/runtime settings as attributes.
+5. Maps Angular URLs to the remote MemoryRouter initial path.
+6. Removes the element on route destroy so React unmounts.
+```
+
+The admin routes use this wrapper:
+
+```ts
+{
+  path: 'products',
+  loadComponent: () =>
+    import('./features/products/product-manager-remote/product-manager-remote.component').then(
+      (m) => m.ProductManagerRemoteComponent,
+    ),
+},
+{
+  path: 'products/new',
+  loadComponent: () =>
+    import('./features/products/product-manager-remote/product-manager-remote.component').then(
+      (m) => m.ProductManagerRemoteComponent,
+    ),
+},
+{
+  path: 'products/:id/edit',
+  loadComponent: () =>
+    import('./features/products/product-manager-remote/product-manager-remote.component').then(
+      (m) => m.ProductManagerRemoteComponent,
+    ),
+},
+```
+
+The custom element observes `initial-path`, so route changes such as `/admin/products/new` or `/admin/products/:id/edit` can remount the React `MemoryRouter` to the matching internal remote path.
+
+##### Style Loading And Isolation
+
+Native Federation loads JavaScript modules. It does not guarantee that CSS imported by a React remote will be applied in every host integration exactly the same way as a standalone Vite page.
+
+For this product manager remote, `src/remote/register.ts` explicitly injects the generated stylesheet:
+
+```ts
+const link = document.createElement('link');
+link.rel = 'stylesheet';
+link.href = new URL('./register.css', import.meta.url).href;
+link.dataset.productManagerRemoteStyle = 'true';
+document.head.appendChild(link);
+```
+
+Why this is needed:
+
+- The Angular host loads `./register`, not the remote preview `index.html`.
+- The host document therefore will not automatically include `<link rel="stylesheet" href="/assets/main.css">`.
+- Without the injected `register.css`, the remote falls back to browser default styling: full-width form fields, huge product images, unstyled tables, and incorrect spacing.
+- The `data-product-manager-remote-style` guard prevents duplicate style links if the route is visited multiple times.
+
+Style rules in `remote.css` must stay scoped:
+
+```css
+.product-manager-root .btn {}
+.product-manager-root table {}
+.product-manager-root .thumb {}
+```
+
+Avoid unscoped rules in remote CSS:
+
+```css
+body {}
+button {}
+table {}
+img {}
+```
+
+Unscoped remote CSS can damage the Angular shell because Web Component custom elements do not automatically isolate global styles unless Shadow DOM is used. This repository currently uses scoped light-DOM styles, not Shadow DOM, so the `.product-manager-root` prefix is the style boundary.
+
+The embedded design intentionally reuses host tokens where they exist:
+
+```css
+--pm-surface: var(--color-surface, #fff);
+--pm-border: var(--color-border, #d7e1dc);
+--pm-text: var(--color-text-primary, #10201d);
+--pm-primary: var(--color-primary, #374151);
+```
+
+That keeps the remote visually aligned with `admin-app` while still providing fallback values if the remote is opened by itself.
+
+Important embedded layout rules:
+
+```css
+.product-manager-root .page {
+  padding: 0;
+  max-width: none;
+}
+
+.product-manager-root .thumb {
+  width: 48px !important;
+  max-width: 48px;
+  height: 48px !important;
+  object-fit: cover;
+}
+
+.product-manager-root table {
+  table-layout: fixed;
+  min-width: 880px;
+}
+```
+
+These prevent the remote from looking like a separate full page and prevent API image URLs from rendering at natural image size inside the Angular host.
+
+#### Django As an Angular-Hosted Remote
+
+Django is not a frontend JavaScript module, so Angular cannot load it through Native Federation.
+
+Use Django in one of two ways:
+
+```text
+Option A: Django as backend
+  Angular shell or React remote -> HTTP -> Django REST/GraphQL API
+
+Option B: Django as independently served UI
+  Angular shell route -> iframe -> Django server-rendered page
+```
+
+Use Option A for most product applications. Django owns business logic, data, authentication APIs, and admin operations. Angular owns the UI.
+
+Angular API service example:
+
+```ts
+// shell-app/src/app/features/reports/reports.service.ts
+import { HttpClient } from '@angular/common/http';
+import { Injectable, inject } from '@angular/core';
+
+export interface ReportSummary {
+  id: string;
+  title: string;
+  total: number;
+}
+
+@Injectable({ providedIn: 'root' })
+export class ReportsService {
+  private readonly http = inject(HttpClient);
+  private readonly apiBaseUrl = 'http://localhost:8000/api';
+
+  listReports() {
+    return this.http.get<ReportSummary[]>(`${this.apiBaseUrl}/reports/`);
+  }
+}
+```
+
+Use Option B when you need to embed an existing Django admin-like screen quickly.
+
+Angular Django iframe wrapper:
+
+```ts
+// shell-app/src/app/features/django-admin/django-admin-remote.component.ts
+import { Component } from '@angular/core';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+
+@Component({
+  selector: 'app-django-admin-remote',
+  standalone: true,
+  template: `
+    <section class="external-remote">
+      <iframe
+        title="Django admin"
+        [src]="remoteUrl"
+        referrerpolicy="strict-origin-when-cross-origin"
+      ></iframe>
+    </section>
+  `,
+  styles: [
+    `
+      :host {
+        display: block;
+      }
+
+      iframe {
+        display: block;
+        width: 100%;
+        min-height: calc(100dvh - 8rem);
+        border: 0;
+      }
+    `,
+  ],
+})
+export class DjangoAdminRemoteComponent {
+  protected readonly remoteUrl: SafeResourceUrl;
+
+  constructor(sanitizer: DomSanitizer) {
+    this.remoteUrl = sanitizer.bypassSecurityTrustResourceUrl('http://localhost:8000/admin/');
+  }
+}
+```
+
+Django must allow the Angular host to frame it. Prefer CSP `frame-ancestors` through middleware or a package such as `django-csp`:
+
+```py
+# settings.py with django-csp
+CSP_FRAME_ANCESTORS = ("'self'", "http://localhost:4200")
+CSRF_TRUSTED_ORIGINS = ["http://localhost:4200"]
+```
+
+Focus points for Django iframe remotes:
+
+- CSRF and session cookies must be configured for the host and Django origins.
+- `SameSite`, `Secure`, and domain settings must match the deployment topology.
+- CSP and frame headers must explicitly allow the Angular host.
+- Django pages will not automatically inherit Angular theme variables.
+- Use iframe only for coarse app boundaries, not small widgets.
+
+#### Recommended Architecture For This Repository
+
+For this repository, use these rules:
+
+```text
+Angular route remote:
+  Use Native Federation and expose Angular Routes.
+
+React feature remote:
+  Use Vite React + Native Federation and expose ./mount.
+
+Next.js application:
+  Keep standalone Next.js for App Router pages.
+  For tight Angular integration, expose browser-only React code through a Web Component or mount API.
+  In this repo, product-manager exposes ./register and renders <product-manager-mfe>.
+
+Django application:
+  Use as backend API for Angular/React remotes.
+  Embed server-rendered Django pages with iframe only when necessary.
+```
+
+Do not try to make Django produce `remoteEntry.json`. Django can serve JavaScript files, but it is not a browser module federation runtime. If a Django-backed feature needs to appear as a Native Federation remote, build the UI as Angular, React, or Vue and let that frontend call Django APIs.
+
+#### Local Development Ports
+
+Example local ports:
+
+```text
+Angular shell:             http://localhost:4200
+Angular auth remote:       http://localhost:4201/remoteEntry.json
+Angular admin remote:      http://localhost:4202/remoteEntry.json
+React price-lens remote:   http://localhost:4204/remoteEntry.json
+Next product remote:       http://localhost:4205/remoteEntry.json
+Standalone Next mode:      http://localhost:4205/admin/products when run with npm run next:dev
+Django app/API example:    http://localhost:8000
+```
+
+Example Angular routes:
+
+```ts
+export const routes: Routes = [
+  {
+    path: 'price-lens',
+    loadComponent: () =>
+      import('./features/price-lens/price-lens-remote.component').then(
+        (m) => m.PriceLensRemoteComponent,
+      ),
+  },
+  {
+    path: 'next-dashboard',
+    loadComponent: () =>
+      import('./features/next-dashboard/next-dashboard-remote.component').then(
+        (m) => m.NextDashboardRemoteComponent,
+      ),
+  },
+  {
+    path: 'django-admin',
+    loadComponent: () =>
+      import('./features/django-admin/django-admin-remote.component').then(
+        (m) => m.DjangoAdminRemoteComponent,
+      ),
+  },
+];
+```
+
+Verification checklist:
+
+```text
+For React Native Federation remote:
+  1. Open remoteEntry.json.
+  2. Confirm the exposed module key exists.
+  3. For a mount API remote, load the Angular route that calls remote.mount(...).
+  4. For a Web Component remote, confirm customElements.get('product-manager-mfe') after ./register loads.
+  5. Confirm the remote CSS file is requested and applied.
+
+For Next.js iframe remote:
+  1. Open the Next.js route directly.
+  2. Confirm CSP frame-ancestors allows the Angular host.
+  3. Open the Angular iframe wrapper route.
+  4. Test postMessage only with origin validation.
+
+For Django API:
+  1. Open the API endpoint directly.
+  2. Confirm CORS, CSRF, and cookies work.
+  3. Call the endpoint from Angular HttpClient or the React remote.
+
+For Django iframe:
+  1. Open the Django page directly.
+  2. Confirm CSP/X-Frame-Options allows the Angular host.
+  3. Confirm login/session behavior inside the iframe.
+
+For product-manager in this repo:
+  1. Stop any process running next dev on port 4205.
+  2. Run npm run dev from frontend/native-federation/product-manager.
+  3. Open http://localhost:4205/remoteEntry.json and confirm it returns JSON.
+  4. Confirm the response includes Access-Control-Allow-Origin.
+  5. Open http://localhost:4200/admin/products from shell-app.
+```
 
 ## 8. Web Components With Native Federation
 
@@ -2268,7 +4433,948 @@ admin-app
 
 auth-app
   exposes ./routes
+
+product-manager
+  exposes ./register
+  registers <product-manager-mfe>
+  used by admin-app product routes
 ```
+
+### 14.1 Choose The Application Role
+
+Before changing files, decide the role of the app. The role determines which files and commands are required.
+
+| Role | Meaning | Needs `remoteEntry.json`? | Needs host manifest? | Typical files |
+| --- | --- | --- | --- | --- |
+| Host only | Loads other apps but is not loaded by another app. | Usually no, unless it also exposes modules later. | Yes | `federation.config.mjs`, `public/assets/federation.manifest.json`, `src/main.ts`, `src/bootstrap.ts`, `src/federation-loader.ts` |
+| Remote only | Exposes modules for another app to load. | Yes | No, unless it also loads remotes. | `federation.config.mjs`, exposed source files, federation build config |
+| Host plus remote | Is loaded by one app and loads another app. | Yes | Yes | Host files plus remote `exposes` |
+| Normal app | Does not load or expose remotes. | No | No | No federation files |
+
+Use this decision rule:
+
+```text
+Does this app need to load another deployed frontend at runtime?
+  Yes -> it is a host.
+
+Does another deployed frontend need to load this app at runtime?
+  Yes -> it is a remote.
+
+Both yes -> host plus remote.
+Both no -> do not add Native Federation.
+```
+
+The exposed contract must be small and stable:
+
+| Framework case | Recommended exposed contract |
+| --- | --- |
+| Angular remote consumed by Angular host | `./routes` exporting Angular `Routes`, or a standalone Angular component |
+| React remote consumed by Angular host | `./register` registering a Web Component, or `./mount` exporting a mount function |
+| React remote consumed by React host | React component, React routes, Web Component, or mount function |
+| Next.js app consumed by Angular host | Browser-only React adapter through `./register` or `./mount`; do not expose App Router pages |
+| Server-rendered Next/Django app that must keep SSR | iframe or separate navigation, not Native Federation browser modules |
+
+### 14.2 Make A Pure Angular Application A Host
+
+Use this when a normal Angular app should load one or more remotes at runtime.
+
+Step 1: Install the Angular Native Federation adapter.
+
+```bash
+npm install @angular-architects/native-federation
+```
+
+Step 2: Initialize the app as a dynamic host.
+
+```bash
+ng g @angular-architects/native-federation:init --project shell-app --port 4200 --type dynamic-host
+```
+
+Use the real Angular project name from `angular.json`. The schematic normally updates `angular.json`, creates `federation.config.mjs`, and splits bootstrap into `main.ts` and `bootstrap.ts`.
+
+Step 3: Verify `angular.json` uses the Native Federation wrapper builder.
+
+```json
+{
+  "build": {
+    "builder": "@angular-architects/native-federation:build"
+  },
+  "serve": {
+    "builder": "@angular-architects/native-federation:build"
+  },
+  "esbuild": {
+    "builder": "@angular/build:application"
+  }
+}
+```
+
+The Native Federation builder wraps the normal Angular esbuild application build. It does not replace Angular with webpack.
+
+Step 4: Configure the host's `federation.config.mjs`.
+
+```js
+import { withNativeFederation, shareAll } from '@angular-architects/native-federation/config';
+
+export default withNativeFederation({
+  name: 'shell_app',
+  remotes: {
+    auth_app: 'http://localhost:4201/remoteEntry.json',
+    admin_app: 'http://localhost:4202/remoteEntry.json',
+  },
+  shared: {
+    ...shareAll({ singleton: true, strictVersion: true, requiredVersion: 'auto', build: 'package' }),
+  },
+});
+```
+
+Why:
+
+- `name` gives this app a stable federation identity.
+- `remotes` documents build-time known remotes.
+- `shared` keeps Angular runtime packages compatible across Angular host and Angular remotes.
+
+Step 5: Add the runtime manifest.
+
+`public/assets/federation.manifest.json`:
+
+```json
+{
+  "auth_app": "http://localhost:4201/remoteEntry.json",
+  "admin_app": "http://localhost:4202/remoteEntry.json",
+  "productManager": "http://localhost:4205/remoteEntry.json"
+}
+```
+
+Why:
+
+- The manifest is the runtime address book.
+- Production can point the same host build to different remote URLs.
+- The keys must match remote `name` values exactly.
+
+Step 6: Initialize federation before Angular bootstrap.
+
+`src/main.ts`:
+
+```ts
+import { startFederation } from './federation-loader';
+
+startFederation('/assets/federation.manifest.json')
+  .then(() => import('./bootstrap'))
+  .catch((err: unknown) => console.error(err));
+```
+
+`src/bootstrap.ts`:
+
+```ts
+import { bootstrapApplication } from '@angular/platform-browser';
+import { App } from './app/app';
+import { appConfig } from './app/app.config';
+
+bootstrapApplication(App, appConfig).catch((err: unknown) => console.error(err));
+```
+
+Why:
+
+- `main.ts` should avoid importing Angular app code before federation initializes.
+- `bootstrap.ts` imports Angular and starts the application only after Native Federation prepares import maps.
+
+Step 7: Add a host loader wrapper.
+
+`src/federation-loader.ts`:
+
+```ts
+import { initFederation, NativeFederationResult } from '@angular-architects/native-federation';
+
+let federation: Promise<NativeFederationResult> | undefined;
+
+export function startFederation(manifestUrl?: string) {
+  federation = initFederation(manifestUrl);
+  return federation;
+}
+
+export async function loadRemote<T = unknown>(remoteName: string, exposedModule: string): Promise<T> {
+  const federationResult = federation ?? startFederation('/assets/federation.manifest.json');
+  const { loadRemoteModule } = await federationResult;
+  return loadRemoteModule<T>(remoteName, exposedModule);
+}
+```
+
+Why:
+
+- Route code gets one local `loadRemote(...)` API.
+- Host plus remote apps still work when loaded inside another shell because the loader can initialize lazily.
+
+Step 8: Load Angular remote routes.
+
+```ts
+import { Routes } from '@angular/router';
+import { loadRemote } from '../federation-loader';
+
+export const routes: Routes = [
+  {
+    path: 'auth',
+    loadChildren: () =>
+      loadRemote<{ routes: Routes }>('auth_app', './routes').then((m) => m.routes),
+  },
+];
+```
+
+Step 9: Load React/Web Component remotes through an Angular wrapper.
+
+```ts
+{
+  path: 'products',
+  loadComponent: () =>
+    import('./features/products/product-manager-remote/product-manager-remote.component').then(
+      (m) => m.ProductManagerRemoteComponent,
+    ),
+}
+```
+
+Step 10: Verify.
+
+```bash
+npm run build
+npm start
+```
+
+Then open:
+
+```text
+http://localhost:4200/assets/federation.manifest.json
+http://localhost:4201/remoteEntry.json
+http://localhost:4200/auth/login
+```
+
+### 14.3 Make A Pure Angular Application A Remote
+
+Use this when an Angular app should expose routes or components to an Angular host.
+
+Step 1: Install and initialize as a remote.
+
+```bash
+npm install @angular-architects/native-federation
+ng g @angular-architects/native-federation:init --project auth-app --port 4201 --type remote
+```
+
+Step 2: Expose Angular routes.
+
+`federation.config.mjs`:
+
+```js
+import { withNativeFederation, shareAll } from '@angular-architects/native-federation/config';
+
+export default withNativeFederation({
+  name: 'auth_app',
+  exposes: {
+    './routes': './src/app/app.routes.ts',
+  },
+  shared: {
+    ...shareAll({ singleton: true, strictVersion: true, requiredVersion: 'auto', build: 'package' }),
+  },
+});
+```
+
+Step 3: Export route definitions from the exposed file.
+
+```ts
+import { Routes } from '@angular/router';
+
+export const routes: Routes = [
+  {
+    path: 'login',
+    loadComponent: () => import('./features/auth/login/login').then((m) => m.Login),
+  },
+];
+```
+
+Step 4: Keep routes relative to the host mount path.
+
+If the host mounts this remote at `/auth`, the remote route should be `login`, not `/auth/login`.
+
+```text
+Host path:   /auth
+Remote path: login
+Final URL:   /auth/login
+```
+
+Step 5: Keep bootstrap split.
+
+Remote apps still need Native Federation initialization before Angular bootstrap so shared Angular packages resolve correctly.
+
+Step 6: Verify the remote.
+
+```bash
+npm run build
+npm start
+```
+
+Then open:
+
+```text
+http://localhost:4201/remoteEntry.json
+```
+
+The host manifest must use:
+
+```json
+{
+  "auth_app": "http://localhost:4201/remoteEntry.json"
+}
+```
+
+Step 7: Do not add host-only files unless the remote also loads other remotes.
+
+A pure Angular remote does not need `public/assets/federation.manifest.json` or `src/federation-loader.ts` unless it also consumes another remote.
+
+### 14.4 Make A Pure Angular Application Host Plus Remote
+
+Use this when an Angular app is loaded by a parent shell and also loads its own remotes. In this repo, `admin-app` is host plus remote.
+
+Step 1: Configure both `exposes` and `remotes`.
+
+```js
+export default withNativeFederation({
+  name: 'admin_app',
+  exposes: {
+    './routes': './src/app/app.routes.ts',
+  },
+  remotes: {
+    auth_app: 'http://localhost:4201/remoteEntry.json',
+    productManager: 'http://localhost:4205/remoteEntry.json',
+  },
+  shared: {
+    ...shareAll({ singleton: true, strictVersion: true, requiredVersion: 'auto', build: 'package' }),
+  },
+});
+```
+
+Step 2: Add its own manifest because it loads remotes.
+
+`admin-app/public/assets/federation.manifest.json`:
+
+```json
+{
+  "auth_app": "http://localhost:4201/remoteEntry.json",
+  "productManager": "http://localhost:4205/remoteEntry.json"
+}
+```
+
+Step 3: Make the parent shell manifest include every remote needed during nested loading.
+
+`shell-app/public/assets/federation.manifest.json`:
+
+```json
+{
+  "auth_app": "http://localhost:4201/remoteEntry.json",
+  "admin_app": "http://localhost:4202/remoteEntry.json",
+  "price_lens_product_app": "http://localhost:4204/remoteEntry.json",
+  "productManager": "http://localhost:4205/remoteEntry.json"
+}
+```
+
+Why:
+
+- When admin runs standalone at `4202`, it uses its own manifest.
+- When admin is loaded inside shell at `4200/admin`, the browser page belongs to the shell.
+- Listing nested remotes in the shell manifest avoids missing remote resolution when a child host route loads another remote.
+
+Step 4: Use a lazy-safe federation loader.
+
+Use the `federation-loader.ts` pattern from section 14.2 so the app works both standalone and nested inside the shell.
+
+Step 5: Keep route links prefix-aware.
+
+If a host plus remote app can run at `/products` standalone and `/admin/products` inside shell, generate links through a helper such as `AdminRouteService` instead of hardcoding one base path.
+
+### 14.5 Make A Pure React Application A Remote
+
+Use this when a React app should be loaded by Angular or another host as browser JavaScript.
+
+Step 1: Install dependencies.
+
+```bash
+npm install react react-dom react-router-dom
+npm install @softarc/native-federation @softarc/native-federation-esbuild
+npm install -D vite @vitejs/plugin-react esbuild typescript @types/react @types/react-dom
+```
+
+Step 2: Create `federation.config.mjs`.
+
+For a Web Component remote:
+
+```js
+import { withNativeFederation } from '@softarc/native-federation/config';
+
+export default withNativeFederation({
+  name: 'react_feature_app',
+  exposes: {
+    './register': './src/remote/register.tsx',
+  },
+  shared: {},
+});
+```
+
+For a mount API remote:
+
+```js
+export default withNativeFederation({
+  name: 'react_feature_app',
+  exposes: {
+    './mount': './src/mount.tsx',
+  },
+  shared: {},
+});
+```
+
+Step 3: Choose the integration boundary.
+
+| Boundary | Use when | Angular host does |
+| --- | --- | --- |
+| Web Component `./register` | The remote should look like a custom HTML element. | Loads `./register`, then creates the element. |
+| Mount API `./mount` | The host wants explicit mount/unmount control with a DOM node. | Loads `./mount`, calls `mount(outlet, options)`, then calls returned `unmount`. |
+
+Step 4: Implement a Web Component registration module.
+
+```tsx
+import './remote.css';
+import { createRoot, type Root } from 'react-dom/client';
+import { ReactFeatureApp } from './react-feature-app';
+
+const TAG_NAME = 'react-feature-mfe';
+
+class ReactFeatureElement extends HTMLElement {
+  private root: Root | null = null;
+
+  connectedCallback() {
+    if (this.root) return;
+    const mount = document.createElement('div');
+    this.appendChild(mount);
+    this.root = createRoot(mount);
+    this.root.render(<ReactFeatureApp />);
+  }
+
+  disconnectedCallback() {
+    this.root?.unmount();
+    this.root = null;
+  }
+}
+
+if (!customElements.get(TAG_NAME)) {
+  customElements.define(TAG_NAME, ReactFeatureElement);
+}
+```
+
+Step 5: Or implement a mount API.
+
+```tsx
+import { createRoot } from 'react-dom/client';
+import { ReactFeatureApp } from './react-feature-app';
+import './remote.css';
+
+export function mount(element: HTMLElement) {
+  const root = createRoot(element);
+  root.render(<ReactFeatureApp />);
+
+  return {
+    unmount: () => root.unmount(),
+  };
+}
+```
+
+Step 6: Add CSS loading for host rendering.
+
+If the generated CSS is not automatically attached when the host loads the remote module, inject it from the exposed module:
+
+```ts
+const link = document.createElement('link');
+link.rel = 'stylesheet';
+link.href = new URL('./register.css', import.meta.url).href;
+link.dataset.reactFeatureStyle = 'true';
+document.head.appendChild(link);
+```
+
+For a mount API remote, use the generated CSS next to that exposed module, for example `new URL('./mount.css', import.meta.url)`.
+
+Step 7: Scope CSS.
+
+```css
+.react-feature-root .button {}
+.react-feature-root table {}
+.react-feature-root img {}
+```
+
+Do not write broad remote CSS:
+
+```css
+body {}
+button {}
+table {}
+img {}
+```
+
+Step 8: Add a build script if the app is not already using the Angular Native Federation builder.
+
+Use the same pattern as `product-manager/scripts/build.mjs` or `price-lens-product-app/scripts/build.mjs`: initialize `federationBuilder`, bundle the React entry with esbuild, and run `federationBuilder.build()`.
+
+Step 9: Serve the generated output with CORS enabled.
+
+```ts
+export default defineConfig({
+  plugins: [react()],
+  preview: {
+    cors: true,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+      'Access-Control-Allow-Headers': '*',
+    },
+  },
+});
+```
+
+Step 10: Verify.
+
+```bash
+npm run remote:build:dev
+npm run remote:preview
+```
+
+Open:
+
+```text
+http://localhost:<remote-port>/remoteEntry.json
+```
+
+Then load the host route that consumes it.
+
+### 14.6 Make A Pure React Application A Host
+
+Use this when a React app should load remote browser modules.
+
+Step 1: Install the Native Federation runtime/build packages.
+
+```bash
+npm install @softarc/native-federation
+npm install -D @softarc/native-federation-esbuild vite @vitejs/plugin-react esbuild typescript
+```
+
+Step 2: Add a host manifest.
+
+```json
+{
+  "react_feature_app": "http://localhost:4204/remoteEntry.json",
+  "productManager": "http://localhost:4205/remoteEntry.json"
+}
+```
+
+Step 3: Initialize federation before rendering React.
+
+Conceptual shape:
+
+```ts
+import { initFederation } from '@softarc/native-federation';
+
+initFederation('/assets/federation.manifest.json')
+  .then(() => import('./bootstrap'))
+  .catch((error) => console.error(error));
+```
+
+`bootstrap.tsx` should import React and call `createRoot(...)`.
+
+Step 4: Load a Web Component remote.
+
+```tsx
+import { useEffect, useRef } from 'react';
+import { loadRemoteModule } from '@softarc/native-federation';
+
+export function ProductManagerRemoteView() {
+  const outlet = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let element: HTMLElement | undefined;
+
+    void loadRemoteModule('productManager', './register').then((remote: { PRODUCT_MANAGER_ELEMENT: string }) => {
+      element = document.createElement(remote.PRODUCT_MANAGER_ELEMENT);
+      element.setAttribute('initial-path', '/products');
+      outlet.current?.replaceChildren(element);
+    });
+
+    return () => element?.remove();
+  }, []);
+
+  return <div ref={outlet} />;
+}
+```
+
+Step 5: Load a mount API remote.
+
+```tsx
+useEffect(() => {
+  let remoteRoot: { unmount: () => void } | undefined;
+
+  void loadRemoteModule('price_lens_product_app', './mount').then((remote: PriceLensRemoteModule) => {
+    if (outlet.current) {
+      remoteRoot = remote.mount(outlet.current, { routeBasePath: '/price-lens' });
+    }
+  });
+
+  return () => remoteRoot?.unmount();
+}, []);
+```
+
+Step 6: Keep React host routing separate from remote internals.
+
+The React host owns the top-level route where the remote appears. The remote owns its internal route state unless you define an explicit route synchronization contract.
+
+### 14.7 Make A Next.js Application A Remote
+
+Use this when an existing Next.js app has browser-only React feature code that must render inside an Angular or React host.
+
+Do not expose these as Native Federation modules:
+
+```text
+src/app/page.tsx
+src/app/**/page.tsx
+route handlers
+middleware
+server actions
+server components
+Next.js image optimizer
+```
+
+Instead, keep two modes:
+
+```text
+Standalone Next mode:
+  src/app/** pages
+  next dev / next build
+
+Remote mode:
+  src/remote/** browser-only adapter
+  Vite + Native Federation output
+  remoteEntry.json
+```
+
+Step 1: Identify shared browser-safe feature code.
+
+Good shared code:
+
+```text
+src/features/products/components/product-form.tsx
+src/features/products/api/products.api.ts
+src/features/products/types/product.types.ts
+src/lib/auth/api-client.ts
+```
+
+Avoid importing Next-only APIs into remote files:
+
+```text
+next/link
+next/navigation
+next/image
+next/server
+```
+
+Step 2: Add remote dependencies.
+
+```bash
+npm install react-router-dom
+npm install @softarc/native-federation @softarc/native-federation-esbuild
+npm install -D vite @vitejs/plugin-react esbuild
+```
+
+Step 3: Add `federation.config.mjs`.
+
+```js
+import { withNativeFederation } from '@softarc/native-federation/config';
+
+export default withNativeFederation({
+  name: 'productManager',
+  exposes: {
+    './register': './src/remote/register.ts',
+  },
+  shared: {},
+});
+```
+
+Step 4: Add remote-only TypeScript config.
+
+```json
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["vite/client", "node"],
+    "incremental": false
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["node_modules", ".next", "src/app"]
+}
+```
+
+Step 5: Create React Router adapters under `src/remote/pages`.
+
+Standalone Next screen:
+
+```tsx
+import { useRouter } from 'next/navigation';
+
+router.push('/admin/products/new');
+```
+
+Remote screen:
+
+```tsx
+import { useNavigate } from 'react-router-dom';
+
+navigate('/products/new');
+```
+
+Step 6: Create the remote app with `MemoryRouter`.
+
+```tsx
+import { MemoryRouter, Navigate, Route, Routes } from 'react-router-dom';
+
+export function ProductManagerRemote({ initialPath = '/products' }: { initialPath?: string }) {
+  return (
+    <div className="product-manager-root">
+      <MemoryRouter initialEntries={[initialPath]}>
+        <Routes>
+          <Route path="/" element={<Navigate to="/products" replace />} />
+          <Route path="/products" element={<ProductListRemote />} />
+          <Route path="/products/new" element={<ProductCreateRemote />} />
+          <Route path="/products/:id/edit" element={<ProductEditRemote />} />
+        </Routes>
+      </MemoryRouter>
+    </div>
+  );
+}
+```
+
+Why `MemoryRouter`:
+
+- Angular owns the browser URL.
+- React owns internal product-manager navigation.
+- The two routers do not compete for `window.history`.
+
+Step 7: Create the custom element.
+
+```tsx
+export class ProductManagerElement extends HTMLElement {
+  static get observedAttributes() {
+    return ['initial-path'];
+  }
+
+  connectedCallback() {
+    // merge runtime config, create mount node, create React root, render remote app
+  }
+
+  attributeChangedCallback() {
+    // rerender or remount when Angular changes initial-path
+  }
+
+  disconnectedCallback() {
+    // unmount React root
+  }
+}
+```
+
+Step 8: Create the exposed registration module.
+
+```ts
+import './remote.css';
+import { ProductManagerElement } from './product-manager-element';
+
+export const PRODUCT_MANAGER_ELEMENT = 'product-manager-mfe';
+
+function ensureRemoteStylesheet() {
+  if (document.querySelector('link[data-product-manager-remote-style]')) return;
+
+  const link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = new URL('./register.css', import.meta.url).href;
+  link.dataset.productManagerRemoteStyle = 'true';
+  document.head.appendChild(link);
+}
+
+ensureRemoteStylesheet();
+
+if (!customElements.get(PRODUCT_MANAGER_ELEMENT)) {
+  customElements.define(PRODUCT_MANAGER_ELEMENT, ProductManagerElement);
+}
+```
+
+Step 9: Add runtime config through element attributes.
+
+The host passes:
+
+```html
+<product-manager-mfe
+  initial-path="/products"
+  api-base-url="http://localhost:3000"
+  refresh-endpoint="/api/v1/auth/refresh"
+  refresh-token-field="refreshToken"
+  login-url="/auth/login"
+  redirect-on-missing-auth="true">
+</product-manager-mfe>
+```
+
+The remote stores this in `window.__PRODUCT_MANAGER_CONFIG__` and the API client reads it at request time.
+
+Step 10: Configure package scripts.
+
+```json
+{
+  "scripts": {
+    "dev": "npm run remote",
+    "next:dev": "next dev --port 4205",
+    "build": "next build",
+    "remote": "npm run remote:build:dev && npm run remote:preview",
+    "remote:build": "node scripts/build.mjs --prod",
+    "remote:build:dev": "node scripts/build.mjs",
+    "remote:preview": "vite preview --host 0.0.0.0 --port 4205 --strictPort",
+    "remote:typecheck": "tsc -p tsconfig.remote.json --noEmit"
+  }
+}
+```
+
+Step 11: Configure Vite preview CORS.
+
+```ts
+export default defineConfig({
+  plugins: [react()],
+  preview: {
+    cors: true,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+      'Access-Control-Allow-Headers': '*',
+    },
+  },
+});
+```
+
+Step 12: Add the remote to the Angular host manifest.
+
+```json
+{
+  "productManager": "http://localhost:4205/remoteEntry.json"
+}
+```
+
+Step 13: Add an Angular wrapper component.
+
+```ts
+const remote = await loadRemote<ProductManagerRegisterModule>('productManager', './register');
+const element = document.createElement(remote.PRODUCT_MANAGER_ELEMENT);
+element.setAttribute('initial-path', '/products');
+element.setAttribute('api-base-url', 'http://localhost:3000');
+outlet.nativeElement.replaceChildren(element);
+```
+
+Step 14: Verify both modes.
+
+```bash
+npm run remote:typecheck
+npm run remote:build:dev
+npm run build
+```
+
+Then run remote mode:
+
+```bash
+npm run dev
+```
+
+Open:
+
+```text
+http://localhost:4205/remoteEntry.json
+http://localhost:4200/admin/products
+```
+
+For standalone Next mode:
+
+```bash
+npm run next:dev
+```
+
+Open the standalone Next route directly.
+
+### 14.8 Make A Next.js Application A Host
+
+Use this only when a Next.js app should load browser-native remotes into client components.
+
+Step 1: Keep federation code client-side.
+
+Remote loading touches `window`, `document`, import maps, and custom elements. Put it behind a client boundary:
+
+```tsx
+'use client';
+```
+
+Step 2: Initialize federation in a client bootstrap or lazy client component.
+
+Conceptual shape:
+
+```tsx
+'use client';
+
+import { useEffect, useState } from 'react';
+import { initFederation } from '@softarc/native-federation';
+
+export function FederationProvider({ children }: { children: React.ReactNode }) {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    void initFederation('/assets/federation.manifest.json').then(() => setReady(true));
+  }, []);
+
+  if (!ready) return null;
+  return children;
+}
+```
+
+Step 3: Load remotes only from client components.
+
+```tsx
+'use client';
+
+import { useEffect, useRef } from 'react';
+import { loadRemoteModule } from '@softarc/native-federation';
+
+export function RemoteWidget() {
+  const outlet = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let element: HTMLElement | undefined;
+
+    void loadRemoteModule('productManager', './register').then((remote: { PRODUCT_MANAGER_ELEMENT: string }) => {
+      element = document.createElement(remote.PRODUCT_MANAGER_ELEMENT);
+      outlet.current?.replaceChildren(element);
+    });
+
+    return () => element?.remove();
+  }, []);
+
+  return <div ref={outlet} />;
+}
+```
+
+Step 4: Do not call federation runtime APIs from Server Components, route handlers, middleware, or server actions.
+
+Those execute in the Next.js server/runtime environment, not as normal browser modules in the page.
+
+Step 5: Decide whether Next should be the host at all.
+
+Use Next.js as a Native Federation host only if:
+
+- the host page is mostly client-rendered,
+- the remote is browser-only,
+- SEO/SSR expectations do not require the remote content to be server-rendered,
+- the deployment can serve a host manifest and remote assets with correct CORS.
+
+If the remote must be SSR-visible or independently authenticated as a server app, use navigation or iframe integration instead of Native Federation.
 
 ### What Changes From a Basic Angular App
 
@@ -2676,9 +5782,11 @@ This file exists only in apps that load other remotes.
 
 | App | Needs `federation-loader.ts`? | Why |
 | --- | --- | --- |
-| `shell-app` | Yes | It is the main host and loads `auth_app` and `admin_app`. |
-| `admin-app` | Yes | It is a remote for `shell-app`, but it is also a host for `auth_app`. This makes it a host-plus-remote app. |
+| `shell-app` | Yes | It is the main host and loads `auth_app`, `admin_app`, `price_lens_product_app`, and `productManager`. |
+| `admin-app` | Yes | It is a remote for `shell-app`, but it is also a host for `auth_app` and `productManager`. This makes it a host-plus-remote app. |
 | `auth-app` | No | It exposes `./routes` but does not load another remote. |
+| `price-lens-product-app` | No | It exposes `./mount` but does not load another remote. |
+| `product-manager` | No | It exposes `./register` but does not load another remote. |
 
 If an app only exposes modules and never calls `loadRemote(...)`, do not add `federation-loader.ts` to that app.
 
@@ -3314,6 +6422,9 @@ npm install
 cd ../admin-app
 npm install
 
+cd ../price-lens-product-app
+npm install
+
 cd ../shell-app
 npm install
 ```
@@ -3327,6 +6438,9 @@ npm start
 cd ../admin-app
 npm start
 
+cd ../price-lens-product-app
+npm run dev:4204
+
 cd ../shell-app
 npm start
 ```
@@ -3337,6 +6451,7 @@ Verify:
 http://localhost:4200
 http://localhost:4201/remoteEntry.json
 http://localhost:4202/remoteEntry.json
+http://localhost:4204/remoteEntry.json
 http://localhost:4200/assets/federation.manifest.json
 ```
 
@@ -3377,7 +6492,8 @@ Example production manifest:
 ```json
 {
   "auth_app": "https://cdn.example.com/auth-app/v42/remoteEntry.json",
-  "admin_app": "https://cdn.example.com/admin-app/v17/remoteEntry.json"
+  "admin_app": "https://cdn.example.com/admin-app/v17/remoteEntry.json",
+  "price_lens_product_app": "https://cdn.example.com/price-lens-product-app/v8/remoteEntry.json"
 }
 ```
 
@@ -3662,6 +6778,147 @@ How to verify: Check the browser Network tab for blocked requests and missing `A
 
 Solution: Configure the remote asset server or CDN to allow the host origin. In production, prefer explicit trusted origins over `"*"`.
 
+For `product-manager`, CORS is configured in `vite.config.ts` for both Vite dev and preview:
+
+```ts
+export default defineConfig({
+  server: {
+    cors: true,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+      'Access-Control-Allow-Headers': '*',
+    },
+  },
+  preview: {
+    cors: true,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+      'Access-Control-Allow-Headers': '*',
+    },
+  },
+});
+```
+
+If Vite silently chooses another port because `4205` is busy, the shell manifest will still point at `4205` and the remote will fail. That is why `remote:preview` uses `--strictPort`.
+
+#### Product Manager `remoteEntry.json` Returns 404
+
+Problem: The shell requests `http://localhost:4205/remoteEntry.json`, but the response is 404.
+
+Possible cause: `next dev --port 4205` is running instead of the Vite/Native Federation remote preview.
+
+How to verify: The terminal says:
+
+```text
+> next dev --port 4205
+GET /remoteEntry.json 404
+```
+
+Solution: Stop the Next dev server and run:
+
+```bash
+cd frontend/native-federation/product-manager
+npm run dev
+```
+
+In this repo, `npm run dev` is intentionally mapped to `npm run remote`. Use `npm run next:dev` only when testing the standalone Next.js pages directly.
+
+#### Product Manager Remote Looks Unstyled In Angular
+
+Problem: The product manager renders inside Angular, but the UI looks like default browser HTML. Inputs are full-width stacked, product images are huge, and the table is not card-styled.
+
+Possible cause: The remote JS loaded, but the remote stylesheet did not load into the Angular document.
+
+How to verify:
+
+```js
+document.querySelector('link[data-product-manager-remote-style]')
+```
+
+It should return a `<link>` element after `productManager:./register` is loaded. Also check Network for `register.css`.
+
+Solution: Keep this logic in `src/remote/register.ts`:
+
+```ts
+const link = document.createElement('link');
+link.rel = 'stylesheet';
+link.href = new URL('./register.css', import.meta.url).href;
+link.dataset.productManagerRemoteStyle = 'true';
+document.head.appendChild(link);
+```
+
+Also keep remote styles scoped under `.product-manager-root`. Do not add global `body`, `button`, `table`, or `img` rules to `remote.css`.
+
+#### Product Manager React Error: Objects Are Not Valid As A React Child
+
+Problem: React throws:
+
+```text
+Objects are not valid as a React child
+```
+
+Possible cause: The backend returned a relation object for `brand` or `category`, but the table rendered the object directly.
+
+How to verify: Inspect the product list API response. If `brand` or `category` looks like this, it needs formatting before rendering:
+
+```json
+{
+  "id": "1",
+  "name": "Apple",
+  "slug": "apple",
+  "isActive": true
+}
+```
+
+Solution: Use `productRelationLabel(...)` for display and `productRelationInputValue(...)` for form defaults. The `Product` type allows both strings and relation objects because backend response DTOs can differ from create/update input DTOs.
+
+#### Product Manager Validation Error: `brandId must be a UUID`
+
+Problem: Creating a product fails with backend validation errors such as:
+
+```text
+brandId must be a UUID
+each value in categoryIds must be a UUID
+```
+
+Possible cause: The frontend is sending brand/category display values or slugs where the backend create DTO expects IDs.
+
+The backend `CreateProductDto` in `backend/ecommerce-api/src/modules/products/dto/create-product.dto.ts` expects:
+
+```ts
+brandId?: string;
+categoryIds?: string[];
+variants: CreateProductVariantDto[];
+```
+
+It does not accept:
+
+```ts
+brand: string;
+category: string;
+```
+
+Solution: Load selectable values from the backend lookup endpoints and submit their `id` fields:
+
+```text
+GET /api/v1/brands
+GET /api/v1/categories
+```
+
+The Product Manager form should render a brand `<select>` and category checkboxes from those responses. The submitted payload should contain `brandId` and `categoryIds`, not typed names or slugs.
+
+Also keep these related DTO names aligned:
+
+| UI meaning | Backend field |
+| --- | --- |
+| Product status | `status` with `DRAFT`, `ACTIVE`, or `ARCHIVED` |
+| Initial create price | `variants[0].price` as a decimal string |
+| Initial create stock | `variants[0].quantityOnHand` |
+| Variant attributes | `options` |
+| Image position/order | `sortOrder` |
+
 #### Import Map Issues
 
 Problem: The browser console shows an error such as `Unable to resolve specifier '@angular/core'`.
@@ -3904,7 +7161,7 @@ Native Federation is an ESM/import-map based runtime loading system that lets a 
 
 ### How does this repository use it?
 
-`shell-app` initializes Native Federation with `/assets/federation.manifest.json`, then lazy-loads `auth_app` and `admin_app` route modules. `auth_app` and `admin_app` expose `./routes`.
+`shell-app` initializes Native Federation with `/assets/federation.manifest.json`, then lazy-loads Angular route remotes and React remotes. `auth_app` and `admin_app` expose `./routes`; `price_lens_product_app` exposes `./mount`; `productManager` exposes `./register` and registers `<product-manager-mfe>`.
 
 ### How do I use Angular with Angular?
 
@@ -3999,6 +7256,10 @@ What this repository needs:
 | Load remote modules from initialized federation result | `src/federation-loader.ts` in host apps only |
 | Mount Angular remote routes | `src/app/app.routes.ts` |
 | Make TypeScript aware of Native Federation package types | `tsconfig.app.json` |
+| Build non-Angular React remotes | Remote-specific build script such as `product-manager/scripts/build.mjs` or `price-lens-product-app/scripts/build.mjs` |
+| Keep Next.js code out of remote-only typechecking | `product-manager/tsconfig.remote.json` |
+| Register cross-framework UI through a stable browser contract | `product-manager/src/remote/register.ts` and `product-manager/src/remote/product-manager-element.tsx` |
+| Load and scope remote CSS for host rendering | `product-manager/src/remote/register.ts` injects `register.css`; styles stay under `.product-manager-root` |
 
 What this repository does not need:
 
@@ -4009,7 +7270,9 @@ What this repository does not need:
 | Manual edits to generated `remoteEntry.json` | It is generated output and must be produced by the Native Federation build/serve process. |
 | Native Federation providers in `app.config.ts` | Federation initializes before Angular bootstrap in `main.ts`. |
 | `src/federation-loader.ts` in a pure remote | Pure remotes expose modules but do not load other remotes. |
-| A separate `tsconfig.federation.json` | `tsconfig.app.json` already includes the needed files in this repository. |
+| A separate `tsconfig.federation.json` for Angular apps | `tsconfig.app.json` already includes the needed files in the current Angular apps. |
+| Next.js App Router pages as exposed modules | Angular cannot execute Next server/runtime features as Native Federation browser modules. Expose a browser-only adapter instead. |
+| Global CSS selectors in React remote styles | They can leak into the Angular host. Scope under `.product-manager-root` or use Shadow DOM with explicit CSS injection. |
 
 ### `federation.config.mjs` vs `federation.manifest.json`
 
@@ -4082,6 +7345,8 @@ A separate `tsconfig.federation.json` is not required in this repository. The Na
 ```
 
 Because `src/**/*.ts` includes `src/main.ts`, `src/federation-loader.ts`, and exposed files such as `src/app/app.routes.ts`, `tsconfig.app.json` is enough for the current `shell-app`, `auth-app`, and `admin-app`.
+
+`product-manager` is different because it is a Next.js app with an additional Vite/Native Federation remote build. It uses `tsconfig.remote.json` to exclude `.next` and `src/app` while still typechecking shared browser code and `src/remote`.
 
 Use a separate federation tsconfig only if you have a concrete reason, such as a more complex workspace where the Native Federation builder needs a different source set from the Angular app build. Otherwise, one app tsconfig is simpler and avoids duplicated compiler settings.
 
@@ -4187,6 +7452,8 @@ Use this after every Native Federation change:
 10. Navigate to an invalid host URL and confirm the host 404 page.
 11. Navigate to an invalid remote child URL and confirm the remote fallback.
 12. Stop one remote and confirm the host shows remote-unavailable fallback UI.
+13. For React/Web Component remotes, confirm the generated CSS file is loaded into the host document.
+14. For product-manager, confirm port 4205 is running the remote preview, not Next dev.
 ```
 
 ## 27. Quick Reference
@@ -4198,6 +7465,8 @@ shell_app
 auth_app
 admin_app
 product_spotlight_app
+price_lens_product_app
+productManager
 ```
 
 Current remote entries:
@@ -4206,6 +7475,8 @@ Current remote entries:
 http://localhost:4201/remoteEntry.json
 http://localhost:4202/remoteEntry.json
 http://localhost:4203/remoteEntry.json
+http://localhost:4204/remoteEntry.json
+http://localhost:4205/remoteEntry.json
 ```
 
 Current exposed modules:
@@ -4213,7 +7484,9 @@ Current exposed modules:
 ```text
 auth_app  -> ./routes -> ./src/app/app.routes.ts
 admin_app -> ./routes -> ./src/app/app.routes.ts
-product_spotlight_app -> ./register -> ./src/register.tsx
+product_spotlight_app -> ./register -> ./src/remote/register.ts
+price_lens_product_app -> ./mount -> ./src/mount.tsx
+productManager -> ./register -> ./src/remote/register.ts
 ```
 
 Current host route loading:
@@ -4231,6 +7504,17 @@ loadRemoteFromEntry<ProductSpotlightRegisterModule>(
   'product_spotlight_app',
   './register',
 );
+
+loadRemote<PriceLensRemoteModule>('price_lens_product_app', './mount').then((remote) =>
+  remote.mount(outletElement, { routeBasePath: '/price-lens' }),
+);
+
+loadRemote<ProductManagerRegisterModule>('productManager', './register').then((remote) => {
+  const element = document.createElement(remote.PRODUCT_MANAGER_ELEMENT);
+  element.setAttribute('initial-path', '/products');
+  element.setAttribute('api-base-url', 'http://localhost:3000');
+  outletElement.replaceChildren(element);
+});
 ```
 
 Correct host bootstrap shape:
@@ -4285,4 +7569,34 @@ Troubleshooting checklist:
 10. Is there a host-level 404 route?
 11. Is there a remote-level 404 or redirect inside each exposed remote route tree?
 12. Is there fallback UI for remote failure?
+13. For product-manager, is npm run dev serving Vite preview on 4205 instead of Next dev?
+14. For product-manager, is register.css loaded in the host document?
+```
+
+Product Manager remote command reference:
+
+```bash
+cd frontend/native-federation/product-manager
+npm run dev
+```
+
+Expected remote entry:
+
+```text
+http://localhost:4205/remoteEntry.json
+```
+
+Standalone Next command:
+
+```bash
+cd frontend/native-federation/product-manager
+npm run next:dev
+```
+
+Use standalone Next mode only when opening the product manager directly. It is not the mode consumed by `admin-app` or `shell-app`.
+
+Admin product route in the shell:
+
+```text
+http://localhost:4200/admin/products
 ```
