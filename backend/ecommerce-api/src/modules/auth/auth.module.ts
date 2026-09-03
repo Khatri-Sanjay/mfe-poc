@@ -7,10 +7,13 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './controllers/auth.controller';
+import { IframeAuthController } from './controllers/iframe-auth.controller';
 import { AuthSession } from './entities/auth-session.entity';
 import { EmailVerificationToken } from './entities/email-verification-token.entity';
+import { IframeAuthorizationCode } from './entities/iframe-authorization-code.entity';
 import { PasswordResetToken } from './entities/password-reset-token.entity';
 import { AuthService } from './services/auth.service';
+import { IframeAuthService } from './services/iframe-auth.service';
 import { TokenService } from './services/token.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 
@@ -26,12 +29,12 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 				}
 			})
 		}),
-		TypeOrmModule.forFeature([AuthSession, PasswordResetToken, EmailVerificationToken]),
+		TypeOrmModule.forFeature([AuthSession, PasswordResetToken, EmailVerificationToken, IframeAuthorizationCode]),
 		UsersModule,
 		NotificationsModule
 	],
-	controllers: [AuthController],
-	providers: [AuthService, TokenService, JwtStrategy],
+	controllers: [AuthController, IframeAuthController],
+	providers: [AuthService, IframeAuthService, TokenService, JwtStrategy],
 	exports: [AuthService, TokenService]
 })
 export class AuthModule {}

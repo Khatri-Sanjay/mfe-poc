@@ -10,6 +10,7 @@
     "mfe:spotlight": "npm --prefix frontend/native-federation/product-spotlight-app run dev",
     "mfe:price-lens": "npm --prefix frontend/native-federation/price-lens-product-app run dev",
     "mfe:product-manager": "npm --prefix frontend/native-federation/product-manager run remote",
+    "mfe:django": "python backend/django-commerce-insights/manage.py runserver 8000",
 
     "mfe:api": "npm --prefix backend/ecommerce-api run start:dev"
   },

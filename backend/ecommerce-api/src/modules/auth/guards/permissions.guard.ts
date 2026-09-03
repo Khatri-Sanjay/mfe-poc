@@ -13,11 +13,14 @@ export class PermissionsGuard implements CanActivate {
 			context.getClass()
 		]);
 
+		const request = context.switchToHttp().getRequest<{ user?: AuthenticatedUser; originalUrl?: string }>();
 		if (!requiredPermissions || requiredPermissions.length === 0) {
+			if (request.user?.tokenUse === 'iframe') {
+				return request.originalUrl?.includes('/auth/me') ?? false;
+			}
 			return true;
 		}
 
-		const request = context.switchToHttp().getRequest<{ user: AuthenticatedUser }>();
-		return requiredPermissions.every((permission) => request.user.permissions.includes(permission));
+		return requiredPermissions.every((permission) => request.user?.permissions.includes(permission));
 	}
 }

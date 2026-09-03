@@ -32,6 +32,10 @@ import { AuthService } from '../../core/services/auth.service';
           <i class="bi bi-box-seam"></i>
           <span>Products</span>
         </a>
+        <a [routerLink]="adminRoute.link('/insights')" routerLinkActive="active">
+          <i class="bi bi-graph-up-arrow"></i>
+          <span>Insights</span>
+        </a>
         <a [routerLink]="adminRoute.link('/categories')" routerLinkActive="active">
           <i class="bi bi-tags"></i>
           <span>Categories</span>

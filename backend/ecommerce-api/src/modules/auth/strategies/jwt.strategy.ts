@@ -23,13 +23,18 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
 	async validate(payload: JwtPayload): Promise<AuthenticatedUser> {
 		const user = await this.usersService.findByIdOrFail(payload.sub);
 		await this.usersService.assertCanAuthenticate(user);
+		const userPermissions = [...new Set(user.roles.flatMap((role) => (role.permissions ?? []).map((permission) => permission.name)))];
+		const tokenPermissions = payload.permissions?.length
+			? payload.permissions.filter((permission) => userPermissions.includes(permission))
+			: userPermissions;
 
 		return {
 			id: user.id,
 			email: user.email,
 			sessionId: payload.sessionId,
 			roles: user.roles.map((role) => role.name),
-			permissions: [...new Set(user.roles.flatMap((role) => (role.permissions ?? []).map((permission) => permission.name)))]
+			permissions: tokenPermissions,
+			tokenUse: payload.tokenUse ?? 'user'
 		};
 	}
 

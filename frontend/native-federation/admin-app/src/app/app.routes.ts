@@ -24,6 +24,13 @@ export const routes: Routes = [
           import('./features/dashboard/dashboard.component').then((m) => m.DashboardComponent),
       },
       {
+        path: 'insights',
+        loadComponent: () =>
+          import('./features/django-insights/django-insights.component').then(
+            (m) => m.DjangoInsightsComponent,
+          ),
+      },
+      {
         path: 'products',
         loadComponent: () =>
           import('./features/products/product-manager-remote/product-manager-remote.component').then(

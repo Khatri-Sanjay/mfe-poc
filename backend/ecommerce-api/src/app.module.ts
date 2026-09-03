@@ -58,7 +58,11 @@ import { ProductComparisonModule } from './modules/product-comparison/product-co
 						'req.body.password',
 						'req.body.accessToken',
 						'req.body.refreshToken',
-						'req.body.resetToken'
+						'req.body.resetToken',
+						'req.body.code',
+						'req.body.codeVerifier',
+						'res.body.data.code',
+						'res.body.data.accessToken'
 					],
 					censor: '[REDACTED]'
 				},

@@ -152,7 +152,7 @@ export class CartsService {
 			where: { id: variantId },
 			relations: { product: true }
 		});
-		if (!variant || !variant.isActive || variant.product.status !== ProductStatus.Active) {
+		if (!variant || !variant.isActive || variant.product?.status !== ProductStatus.Active) {
 			throw new NotFoundException({
 				errorCode: ErrorCode.ProductNotFound,
 				message: 'Product variant was not found'
@@ -172,11 +172,14 @@ export class CartsService {
 	}
 
 	private async mapCart(cart: Cart): Promise<CartResponseDto> {
-		const items = cart.items.map<CartItemResponse>((item) => {
+		const items = cart.items.reduce<CartItemResponse[]>((mappedItems, item) => {
 			const variant = item.variant;
+			if (!variant?.product) {
+				return mappedItems;
+			}
 			const product = variant.product;
 			const image = product.images?.find((candidate) => candidate.isPrimary);
-			return {
+			mappedItems.push({
 				id: item.id,
 				variantId: variant.id,
 				productId: product.id,
@@ -188,10 +191,11 @@ export class CartsService {
 				unitPrice: variant.price,
 				quantity: item.quantity,
 				lineTotal: multiplyMoney(variant.price, item.quantity)
-			};
-		});
+			});
+			return mappedItems;
+		}, []);
 
-		const subtotalCents = this.calculateSubtotalCents(cart);
+		const subtotalCents = items.reduce((sum, item) => sum + toCents(item.unitPrice) * item.quantity, 0);
 		let discountTotalCents = 0;
 		if (cart.coupon && subtotalCents > 0) {
 			const couponCalculation = await this.couponsService.calculate(cart.coupon.code, subtotalCents);
@@ -207,12 +211,17 @@ export class CartsService {
 			shippingTotal: '0.00',
 			taxTotal: '0.00',
 			grandTotal: centsToMoney(grandTotalCents),
-			currency: items[0]?.unitPrice ? cart.items[0].variant.currency : 'AUD',
+			currency: items[0] ? cart.items.find((item) => item.id === items[0].id)?.variant?.currency ?? 'AUD' : 'AUD',
 			itemCount: items.reduce((sum, item) => sum + item.quantity, 0)
 		};
 	}
 
 	private calculateSubtotalCents(cart: Cart): number {
-		return cart.items.reduce((sum, item) => sum + toCents(item.variant.price) * item.quantity, 0);
+		return cart.items.reduce((sum, item) => {
+			if (!item.variant?.product) {
+				return sum;
+			}
+			return sum + toCents(item.variant.price) * item.quantity;
+		}, 0);
 	}
 }

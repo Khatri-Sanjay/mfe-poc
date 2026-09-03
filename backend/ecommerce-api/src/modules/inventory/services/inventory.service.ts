@@ -13,8 +13,8 @@ import { InventoryTransactionType } from '../enums/inventory-transaction-type.en
 const mapInventory = (item: InventoryItem): InventoryResponseDto => ({
 	id: item.id,
 	variantId: item.variantId,
-	sku: item.variant.sku,
-	productName: item.variant.product.name,
+	sku: item.variant?.sku ?? item.variantId,
+	productName: item.variant?.product?.name ?? item.variant?.name ?? 'Deleted product',
 	quantityOnHand: item.quantityOnHand,
 	quantityReserved: item.quantityReserved,
 	quantityAvailable: item.quantityOnHand - item.quantityReserved,
