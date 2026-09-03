@@ -35,6 +35,7 @@ export interface ExternalProductOffer {
 	availability?: string;
 	rating?: number;
 	url: string;
+	imageUrl?: string;
 }
 
 export interface ProductSource {

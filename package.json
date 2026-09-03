@@ -2,16 +2,14 @@
   "name": "mfe",
   "private": true,
   "scripts": {
-    "mfe": "concurrently --prefix name --names \"SHELL,AUTH,ADMIN,PRICE-LENS,PRODUCT,SPOTLIGHT,API\" \"npm run mfe:shell\" \"npm run mfe:auth\" \"npm run mfe:admin\" \"npm run mfe:price-lens\" \"npm run mfe:product\" \"npm run mfe:spotlight\" \"npm run mfe:api\"",
+    "mfe": "concurrently --prefix name --names \"SHELL,AUTH,ADMIN,PRICE-LENS,PRODUCT-MANAGER,SPOTLIGHT,API\" \"npm run mfe:shell\" \"npm run mfe:auth\" \"npm run mfe:admin\" \"npm run mfe:price-lens\" \"npm run mfe:product-manager\" \"npm run mfe:spotlight\" \"npm run mfe:api\"",
 
     "mfe:shell": "npm --prefix frontend/native-federation/shell-app start",
     "mfe:auth": "npm --prefix frontend/native-federation/auth-app start",
     "mfe:admin": "npm --prefix frontend/native-federation/admin-app start",
-    "mfe:product-manager": "npm --prefix frontend/native-federation/product-manager start",
-
-    "mfe:price-lens": "npm --prefix frontend/native-federation/price-lens-product-app run dev:4204",
-    "mfe:spotlight": "npm --prefix frontend/native-federation/product-spotlight-app run dev:4203",
-
+    "mfe:spotlight": "npm --prefix frontend/native-federation/product-spotlight-app run dev",
+    "mfe:price-lens": "npm --prefix frontend/native-federation/price-lens-product-app run dev",
+    "mfe:product-manager": "npm --prefix frontend/native-federation/product-manager run remote",
 
     "mfe:api": "npm --prefix backend/ecommerce-api run start:dev"
   },

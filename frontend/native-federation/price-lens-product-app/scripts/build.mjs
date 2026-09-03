@@ -31,6 +31,10 @@ await federationBuilder.init({
     plugins: [],
     fileReplacements: prod ? reactReplacements.prod : reactReplacements.dev,
     define,
+    loader: {
+      '.svg': 'dataurl',
+      '.png': 'dataurl',
+    },
   }),
 });
 

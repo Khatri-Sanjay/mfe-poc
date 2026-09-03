@@ -3,6 +3,7 @@ import { ProductsModule } from '../products/products.module';
 import { ProductComparisonController } from './controllers/product-comparison.controller';
 import { PRODUCT_SOURCES } from './interfaces/product-source.interface';
 import { ProductComparisonService } from './services/product-comparison.service';
+import { ProductImageResolverService } from './services/product-image-resolver.service';
 import { ProductMatchingService } from './services/product-matching.service';
 import { MarketplaceSearchSource } from './sources/marketplace-search.source';
 
@@ -11,6 +12,7 @@ import { MarketplaceSearchSource } from './sources/marketplace-search.source';
 	controllers: [ProductComparisonController],
 	providers: [
 		ProductComparisonService,
+		ProductImageResolverService,
 		ProductMatchingService,
 		MarketplaceSearchSource,
 		{

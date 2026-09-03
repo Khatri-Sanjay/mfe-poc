@@ -1,6 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
 import { ErrorCode } from '../../../common/enums/error-code.enum';
 import { createPaginationMeta } from '../../../common/utils/pagination.util';
 import { createSlug } from '../../../common/utils/slug.util';
@@ -241,16 +241,57 @@ export class ProductsService {
 	}
 
 	private async listProducts(query: ProductQueryDto, publicOnly: boolean) {
-		const builder = this.productsRepository
-			.createQueryBuilder('product')
-			.leftJoinAndSelect('product.brand', 'brand')
-			.leftJoinAndSelect('product.categories', 'category')
-			.leftJoinAndSelect('product.images', 'image')
-			.leftJoinAndSelect('product.variants', 'variant')
-			.leftJoinAndSelect('variant.inventoryItem', 'inventory')
-			.skip((query.page - 1) * query.limit)
-			.take(query.limit);
+		const idBuilder = this.createProductListBuilder(false);
+		this.applyProductListFilters(idBuilder, query, publicOnly);
+		idBuilder.select('product.id', 'id').groupBy('product.id');
 
+		this.applyProductListOrder(idBuilder, query);
+
+		const allMatchingIds = await idBuilder.clone().getRawMany<{ id: string }>();
+		const pageIds = await idBuilder
+			.clone()
+			.offset((query.page - 1) * query.limit)
+			.limit(query.limit)
+			.getRawMany<{ id: string }>();
+		const ids = pageIds.map((row) => row.id);
+
+		if (ids.length === 0) {
+			return {
+				items: [],
+				meta: createPaginationMeta(query.page, query.limit, allMatchingIds.length)
+			};
+		}
+
+		const builder = this.createProductListBuilder(true).andWhere('product.id IN (:...ids)', { ids });
+		this.applyProductListFilters(builder, query, publicOnly);
+		const productOrder = new Map(ids.map((id, index) => [id, index]));
+		const products = (await builder.getMany()).sort((a, b) => (productOrder.get(a.id) ?? 0) - (productOrder.get(b.id) ?? 0));
+
+		return {
+			items: products.map(mapProduct),
+			meta: createPaginationMeta(query.page, query.limit, allMatchingIds.length)
+		};
+	}
+
+	private createProductListBuilder(selectRelations: boolean): SelectQueryBuilder<Product> {
+		const builder = this.productsRepository.createQueryBuilder('product');
+		if (selectRelations) {
+			return builder
+				.leftJoinAndSelect('product.brand', 'brand')
+				.leftJoinAndSelect('product.categories', 'category')
+				.leftJoinAndSelect('product.images', 'image')
+				.leftJoinAndSelect('product.variants', 'variant')
+				.leftJoinAndSelect('variant.inventoryItem', 'inventory');
+		}
+
+		return builder
+			.leftJoin('product.brand', 'brand')
+			.leftJoin('product.categories', 'category')
+			.leftJoin('product.variants', 'variant')
+			.leftJoin('variant.inventoryItem', 'inventory');
+	}
+
+	private applyProductListFilters(builder: SelectQueryBuilder<Product>, query: ProductQueryDto, publicOnly: boolean): void {
 		if (publicOnly) {
 			builder.andWhere('product.status = :status', {
 				status: ProductStatus.Active
@@ -283,22 +324,18 @@ export class ProductsService {
 		if (query.inStock) {
 			builder.andWhere('(inventory.quantity_on_hand - inventory.quantity_reserved) > 0');
 		}
+	}
 
+	private applyProductListOrder(builder: SelectQueryBuilder<Product>, query: ProductQueryDto): void {
 		const order = query.sortOrder.toUpperCase() as 'ASC' | 'DESC';
 		if (query.sortBy === 'price') {
-			builder.orderBy('MIN(variant.price)', order);
-			builder.addGroupBy('product.id, brand.id, category.id, image.id, variant.id, inventory.id');
+			builder.addSelect('MIN(variant.price)', 'sort_price').orderBy('sort_price', order);
 		} else if (query.sortBy === 'name') {
 			builder.orderBy('product.name', order);
 		} else {
 			builder.orderBy('product.createdAt', order);
 		}
-
-		const [products, total] = await builder.getManyAndCount();
-		return {
-			items: products.map(mapProduct),
-			meta: createPaginationMeta(query.page, query.limit, total)
-		};
+		builder.addOrderBy('product.id', 'ASC');
 	}
 
 	private async findHydratedById(id: string, publicOnly: boolean): Promise<Product> {

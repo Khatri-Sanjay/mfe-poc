@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import type { ExternalProductOffer, ProductSourceSearchContext } from '../interfaces/product-source.interface';
 
-const normalize = (value?: string): string => (value ?? '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+const normalize = (value?: string): string =>
+	(value ?? '')
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, ' ')
+		.trim();
 
 const hasWord = (value: string, word: string): boolean => new RegExp(`(^|\\s)${word}(\\s|$)`).test(value);
 

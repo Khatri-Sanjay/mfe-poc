@@ -42,6 +42,37 @@ interface ProductResponseData {
 	variants: Array<{ id: string; sku: string; quantityAvailable: number }>;
 }
 
+interface ProductComparisonResponseData {
+	product: { id: string; name: string; currency: string };
+	summary: {
+		currency: string;
+		lowestPrice: number;
+		averagePrice: number;
+		potentialSavingVsAverage: number;
+		offersCount: number;
+	};
+	recommendations: {
+		bestOverall?: { store: string; offerId: string; score: number; reason: string[] };
+		bestLocal?: { store: string; offerId: string; score: number };
+	};
+	priceAnalysis: { recommendation: string; priceRange: { min: number; max: number } };
+	regionalAnalysis: Array<{ countryCode: string; lowestPrice: number; offerCount: number }>;
+	offers: Array<{
+		id: string;
+		pricing: {
+			original: { amount: number; currency: string };
+			shipping: { amount: number; currency: string };
+			total: { amount: number; currency: string };
+			converted: { currency: string; total: number };
+		};
+		dealScore: { score: number; label: string };
+		match: { confidence: number; status: string };
+	}>;
+	report: { headline: string; recommendation: string; warnings: string[] };
+	metadata: { historyAvailable: boolean; targetCurrency: string };
+	market: { lowestPriceNpr: number; potentialSaving: number };
+}
+
 interface PaginatedResponse<TData> {
 	data: TData[];
 	meta: { total: number };
@@ -316,13 +347,54 @@ describe('Foundation and auth endpoints (e2e)', () => {
 				search: 'iphone',
 				brand: 'apple',
 				category: 'phones',
-				inStock: true
+				inStock: true,
+				page: 1,
+				limit: 6,
+				sortBy: 'price',
+				sortOrder: 'asc'
 			})
 			.expect(200);
 
 		const body = response.body as PaginatedResponse<ProductResponseData>;
 		expect(body.meta.total).toBeGreaterThanOrEqual(1);
 		expect(body.data.some((product) => product.slug === 'iphone-test')).toBe(true);
+	});
+
+	it('returns product intelligence for marketplace search comparisons', async () => {
+		const response = await request(app.getHttpServer())
+			.get('/api/v1/product-comparison/search/items')
+			.query({ query: 'Samsung Galaxy S24' })
+			.expect(200);
+
+		const body = response.body as WrappedResponse<ProductComparisonResponseData>;
+		expect(body.data.product).toMatchObject({
+			id: 'samsung-galaxy-s24',
+			name: 'Samsung Galaxy S24',
+			currency: 'NPR'
+		});
+		expect(body.data.summary.currency).toBe('NPR');
+		expect(typeof body.data.summary.offersCount).toBe('number');
+		expect(typeof body.data.summary.potentialSavingVsAverage).toBe('number');
+		expect(body.data.summary.offersCount).toBeGreaterThan(10);
+		expect(typeof body.data.recommendations.bestOverall?.store).toBe('string');
+		expect(typeof body.data.recommendations.bestOverall?.offerId).toBe('string');
+		expect(typeof body.data.recommendations.bestOverall?.score).toBe('number');
+		expect(typeof body.data.recommendations.bestLocal?.store).toBe('string');
+		expect(typeof body.data.recommendations.bestLocal?.offerId).toBe('string');
+		expect(body.data.priceAnalysis.priceRange.min).toBe(body.data.summary.lowestPrice);
+		expect(body.data.regionalAnalysis.some((region) => region.countryCode === 'NP')).toBe(true);
+		expect(body.data.offers[0]?.pricing.converted.currency).toBe('NPR');
+		expect(typeof body.data.offers[0]?.pricing.converted.total).toBe('number');
+		expect(typeof body.data.offers[0]?.dealScore.score).toBe('number');
+		expect(typeof body.data.offers[0]?.dealScore.label).toBe('string');
+		expect(typeof body.data.offers[0]?.match.confidence).toBe('number');
+		expect(typeof body.data.offers[0]?.match.status).toBe('string');
+		expect(body.data.report.warnings.length).toBeGreaterThan(0);
+		expect(body.data.metadata).toMatchObject({
+			historyAvailable: false,
+			targetCurrency: 'NPR'
+		});
+		expect(body.data.market.lowestPriceNpr).toBe(body.data.summary.lowestPrice);
 	});
 
 	it('retrieves and adjusts inventory as admin', async () => {

@@ -6,7 +6,6 @@
   "scripts": {
     "start": "npm run dev",
     "dev": "npm run build:dev && vite preview --port 4204",
-    "dev:4204": "npm run build:dev && vite preview --port 4204",
     "build": "node scripts/build.mjs --prod",
     "build:dev": "node scripts/build.mjs",
     "lint": "eslint .",

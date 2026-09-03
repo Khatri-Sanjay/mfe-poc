@@ -5,8 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "npm run dev",
-    "dev": "npm run build:dev && vite preview",
-    "dev:4203": "npm run build:dev && vite preview --port 4203",
+    "dev": "npm run build:dev && vite preview --port 4203",
     "build": "node scripts/build.mjs --prod",
     "build:dev": "node scripts/build.mjs",
     "preview": "vite preview",

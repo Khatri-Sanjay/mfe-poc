@@ -125,6 +125,6 @@ import { ProductComparisonModule } from './modules/product-comparison/product-co
 })
 export class AppModule implements NestModule {
 	configure(consumer: MiddlewareConsumer): void {
-		consumer.apply(RequestIdMiddleware).forRoutes('{*path}');
+		consumer.apply(RequestIdMiddleware).forRoutes('*path');
 	}
 }
