@@ -1,0 +1,73 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Commerce Insights</title>
+    <link rel="stylesheet" href="{% static 'insights/app.css' %}">
+    {{ insights_config|json_script:"commerce-insights-config" }}
+    <script defer src="{% static 'insights/app.js' %}"></script>
+  </head>
+  <body>
+    <main class="insights-app">
+      <header class="page-header">
+        <div>
+          <p class="eyebrow">Django Remote</p>
+          <h1>Commerce Insights</h1>
+          <p class="muted">Operational analytics from the NestJS commerce API.</p>
+        </div>
+        <div class="session-pill" id="session-pill">Waiting for admin session</div>
+      </header>
+
+      <section class="state-panel" id="loading-panel">
+        <div class="spinner"></div>
+        <div>
+          <strong>Connecting securely</strong>
+          <p>Waiting for the Angular admin app to send the NestJS access token.</p>
+        </div>
+      </section>
+
+      <section class="state-panel error hidden" id="error-panel">
+        <strong>Insights could not load</strong>
+        <p id="error-message"></p>
+      </section>
+
+      <section class="metrics-grid hidden" id="metrics-grid" aria-label="Dashboard metrics"></section>
+
+      <section class="content-grid hidden" id="content-grid">
+        <article class="panel">
+          <div class="panel-heading">
+            <h2>Low Stock</h2>
+            <span id="low-stock-count"></span>
+          </div>
+          <div class="list" id="low-stock-list"></div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-heading">
+            <h2>Recent Orders</h2>
+            <span id="orders-count"></span>
+          </div>
+          <div class="list" id="orders-list"></div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-heading">
+            <h2>Pending Reviews</h2>
+            <span id="reviews-count"></span>
+          </div>
+          <div class="list" id="reviews-list"></div>
+        </article>
+
+        <article class="panel">
+          <div class="panel-heading">
+            <h2>Products</h2>
+            <span id="products-count"></span>
+          </div>
+          <div class="list" id="products-list"></div>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>
